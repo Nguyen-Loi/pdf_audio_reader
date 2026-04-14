@@ -12,7 +12,20 @@
           "package_name": "com.nguyenloi.pdf_audio_reader"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "604564869146-7rdsbjpla1as7mo0eervpjuj62rkvs43.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nguyenloi.pdf_audio_reader",
+            "certificate_hash": "0e1aac04b7feffea69ea9e5ac030fa7740355b37"
+          }
+        },
+        {
+          "client_id": "604564869146-dbdabtjn29u9imuc94enkkcavf7b0kpv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyB7I895cxU9eB9hy3qqjCNH2NmQqB6_E7M"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "604564869146-dbdabtjn29u9imuc94enkkcavf7b0kpv.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "604564869146-rg8d5e44nln0hm6tl36p29g6cofdcp3p.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.nguyenloi.pdfAudioReader"
+              }
+            }
+          ]
         }
       }
     }

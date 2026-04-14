@@ -2,20 +2,20 @@
 
 ## 1. Goal
 
-Build a Flutter mobile app ("PDF Readcloud") that reads PDF files aloud with real-time word-by-word karaoke highlighting, background playback with OS media controls, Firebase auth/persistence, and RevenueCat subscriptions — all structured around **Feature-first Clean Architecture**.
+Build a Flutter mobile app ("PDF Readcloud") that reads PDF files aloud with real-time word-by-word karaoke highlighting, background playback with OS media controls, Firebase auth/persistence, and native in-app purchases — all structured around **Feature-first Clean Architecture**.
 
 ---
 
-## 2. User Review Required
+## 2. Confirmed Decisions
 
-> [!IMPORTANT]
-> **Syncfusion License** — `syncfusion_flutter_pdf` is a commercial package. You must obtain a **free Community License** (for individuals / companies with < $1M revenue) or a commercial license from [syncfusion.com](https://www.syncfusion.com/products/communitylicense). An alternative is the MIT-licensed `pdf_text` package, but it has weaker extraction quality. Please confirm which you'd like to use.
+> [!NOTE]
+> **PDF Library — ✅ Decided:** Using `read_pdf_text` (MIT-licensed, free/open-source) for PDF text extraction. This keeps the stack fully free. Complex or scanned PDFs may yield lower-quality extraction compared to Syncfusion, but plain-text extraction quality is sufficient for TTS. The datasource file has been renamed accordingly.
 
-> [!WARNING]
-> **RevenueCat API Key** — You'll need to create a RevenueCat project and configure products/entitlements in the dashboard before the subscription feature can be tested. This plan stubs the integration so development can proceed independently.
+> [!NOTE]
+> **Subscriptions — ✅ Decided:** Using Flutter's native `in_app_purchase` package instead of RevenueCat (`purchases_flutter`). IAP listeners, product fetching, and purchase verification will be handled directly in the app. Receipt validation with App Store / Play Store will be addressed at the testing stage.
 
-> [!IMPORTANT]
-> **Firebase Setup** — You must create a Firebase project, enable Google Sign-In under Authentication, create a Firestore database, and download the `google-services.json` (Android) / `GoogleService-Info.plist` (iOS) config files. This plan assumes these files are available at build time.
+> [!NOTE]
+> **Firebase — ✅ Decided:** The project is already configured via the FlutterFire CLI. `lib/firebase_options.dart` has been generated. Firebase initializes using `DefaultFirebaseOptions.currentPlatform` in `bootstrap.dart`. **No manual `google-services.json` management is required.** Focus platforms: **Android, iOS** (Web is optional).
 
 ---
 
@@ -110,7 +110,7 @@ lib/
 │   ├── pdf_parser/                      # ── PDF TEXT EXTRACTION FEATURE ──
 │   │   ├── data/
 │   │   │   ├── datasources/
-│   │   │   │   └── syncfusion_pdf_datasource.dart
+│   │   │   │   └── read_pdf_text_datasource.dart  # Uses read_pdf_text (MIT)
 │   │   │   └── repositories/
 │   │   │       └── pdf_parser_repository_impl.dart
 │   │   ├── domain/
@@ -187,10 +187,10 @@ lib/
 │   │       └── pages/
 │   │           └── settings_page.dart
 │   │
-│   └── subscription/                    # ── IN-APP PURCHASES ──
+│   └── subscription/                    # ── IN-APP PURCHASES (native) ──
 │       ├── data/
 │       │   ├── datasources/
-│       │   │   └── revenuecat_datasource.dart
+│       │   │   └── iap_datasource.dart            # in_app_purchase wrapper
 │       │   └── repositories/
 │       │       └── subscription_repository_impl.dart
 │       ├── domain/
@@ -212,7 +212,7 @@ lib/
 │               └── premium_badge.dart
 │
 ├── services/                            # Cross-cutting service singletons
-│   ├── firebase_service.dart            # Firebase.initializeApp wrapper
+│   ├── firebase_service.dart            # Firebase.initializeApp (uses firebase_options.dart)
 │   └── file_service.dart                # File picker + permissions
 │
 └── generated/                           # Riverpod / build_runner output
@@ -491,8 +491,9 @@ This gives the lock screen and notification a meaningful display.
 - Implement `core/constants/`
 
 ### Phase 3: Firebase & Auth Feature
-- Integrate Firebase (add `firebase_core`, `firebase_auth`, `google_sign_in`, `cloud_firestore`)
-- Create platform config files setup documentation
+- Firebase is already initialized via FlutterFire CLI (`lib/firebase_options.dart` ✅)
+- Add `firebase_core`, `firebase_auth`, `google_sign_in`, `cloud_firestore` to `pubspec.yaml`
+- Call `Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform)` in `bootstrap.dart`
 - Implement auth data layer (Firebase datasource → repository)
 - Implement auth domain (entities, use cases)
 - Implement auth presentation (login page, Riverpod providers)
@@ -505,11 +506,11 @@ This gives the lock screen and notification a meaningful display.
 - Implement delete/manage PDFs
 
 ### Phase 5: PDF Text Extraction Feature
-- Integrate `syncfusion_flutter_pdf`
-- Implement `pdf_parser` data layer (`PdfTextExtractor`)
+- Integrate `read_pdf_text` (MIT-licensed, free)
+- Implement `pdf_parser` data layer using `ReadPdfText.getPDFtexts(filePath)` which returns `List<String>` (one entry per page)
 - Create `ParsedDocument` entity (list of `ParsedPage` with text per page)
 - Pre-process text: normalize whitespace, extract sentence boundaries
-- Handle extraction errors (scanned PDFs, encrypted PDFs)
+- Handle extraction errors (scanned/encrypted PDFs — `read_pdf_text` returns empty strings for unreadable pages; surface a meaningful error state)
 
 ### Phase 6: TTS Audio Handler (★ Critical Path)
 - Implement `TtsAudioHandler extends BaseAudioHandler`
@@ -541,12 +542,16 @@ This gives the lock screen and notification a meaningful display.
 - Auto-restore position on app reopen
 - Implement "Continue Reading" card on library page
 
-### Phase 10: Subscription Feature
-- Integrate `purchases_flutter` (RevenueCat)
-- Define entitlements: `premium_access`
-- Implement paywall page
+### Phase 10: Subscription Feature (native `in_app_purchase`)
+- Integrate Flutter's `in_app_purchase` package
+- Configure products in **App Store Connect** (iOS) and **Google Play Console** (Android)
+- Initialize `InAppPurchase.instance` and open the store connection in `iap_datasource.dart`
+- Listen to `InAppPurchase.instance.purchaseStream` for real-time purchase updates
+- Implement `buyNonConsumable` / `buyConsumable` flows
+- Implement paywall page (`paywall_page.dart`)
 - Gate premium features (e.g., unlimited PDFs, voice selection, speed > 2x)
-- Implement restore purchases
+- Implement restore purchases via `InAppPurchase.instance.restorePurchases()`
+- *(Deferred)* Server-side receipt validation with App Store / Play Store
 
 ### Phase 11: Platform Configuration
 - **Android `AndroidManifest.xml`:**
@@ -595,16 +600,16 @@ dependencies:
   google_sign_in: ^6.2.0
   cloud_firestore: ^5.0.0
 
-  # PDF Parsing
-  syncfusion_flutter_pdf: ^27.0.0
+  # PDF Parsing (MIT-licensed, free)
+  read_pdf_text: ^0.2.0       # Returns List<String> per page
 
   # TTS & Audio
   flutter_tts: ^4.2.0
   audio_service: ^0.18.0
   audio_session: ^0.1.0
 
-  # Subscriptions
-  purchases_flutter: ^8.0.0
+  # In-App Purchases (native)
+  in_app_purchase: ^3.2.0
 
   # Utilities
   file_picker: ^8.0.0
@@ -638,8 +643,11 @@ dev_dependencies:
 | Error Handling | `Either<Failure, T>` from `fpdart` | Functional error handling without exceptions crossing layer boundaries |
 | TTS ↔ UI Bridge | `customEvent` stream on `BaseAudioHandler` | Only sanctioned way to send arbitrary data from handler to UI; avoids fighting the framework |
 | Background Audio | `audio_service` wrapping `flutter_tts` | Provides OS-level media session without needing actual audio files |
+| Reader UI | Plain-text karaoke view only (no PDF visual renderer) | Simpler architecture; `read_pdf_text` output maps directly to `RichText` highlighting |
+| Offline-first | Firestore offline persistence enabled (`PersistenceSettings(cacheSizeBytes: …)`) | All reads/writes work offline; Firestore syncs automatically when connectivity resumes |
 | Auth Bypass | Settings repo falls back to `SharedPreferences` when user is `null` | Firestore datasource is injected optionally; guest mode uses local-only persistence |
 | Page-as-Queue-Item | Each PDF page = one `MediaItem` | Maps naturally to skip-next/skip-previous; gives meaningful notification content |
+| Premium Gate (v1) | Background playback is the sole locked feature | Price TBD; all other features free at launch |
 
 ---
 
@@ -649,10 +657,10 @@ dev_dependencies:
 |---|---|---|
 | Android `setProgressHandler` offset reset on resume | Word highlighting jumps to wrong position | `_globalOffset` accumulator pattern (see §5.5) |
 | `flutter_tts` pause not truly pausing on Android | Speech restarts from wrong position | Track `_pauseCharOffset` via `setProgressHandler`; re-speak substring |
-| Syncfusion license requirement | Build fails or legal risk | Confirm license choice upfront; alternative: `pdf_text` package |
+| `read_pdf_text` may return empty text for scanned/encrypted PDFs | Silent failure, nothing to read aloud | Surface a user-visible error and suggest re-importing a text-based PDF |
 | Long PDFs overwhelming TTS | Crashes or lag | Speak one page at a time; pre-tokenize text; lazy-load pages |
-| `customEvent` stream not received when app is killed | No highlighting | This is expected; background audio continues via OS TTS; highlighting only works when UI is visible |
-| RevenueCat requires real device testing | Cannot test on emulator | Document testing requirements; use sandbox accounts |
+| `customEvent` stream not received when app is killed | No highlighting | Expected; background audio continues via OS TTS; highlighting only works when UI is visible |
+| `in_app_purchase` requires real device + store config | Cannot test on simulator without sandbox setup | Configure sandbox testers in App Store Connect / Play Console before Phase 10 testing |
 
 ---
 
@@ -679,13 +687,13 @@ dev_dependencies:
 
 ---
 
-## Open Questions
-
-> [!IMPORTANT]
-> 1. **Syncfusion vs pdf_text** — Which PDF parsing library do you prefer? Syncfusion has superior extraction quality but requires a license. `pdf_text` is MIT-licensed but may struggle with complex PDFs.
-
-> [!IMPORTANT]
-> 2. **PDF Viewer** — Do you also want to display the original PDF visually (as rendered pages) alongside or instead of the plain-text view? This would require `syncfusion_flutter_pdfviewer` or `pdfx` and significantly changes the reader UI architecture.
+## ✅ All Questions Resolved
 
 > [!NOTE]
-> 3. **Offline-first** — Should the app work fully offline (no Firebase dependency at all when not logged in), or is network connectivity assumed for some features beyond auth?
+> **PDF Viewer — ✅ Plain text only.** No visual PDF renderer. The reader displays extracted text in the karaoke `RichText` view. No `pdfx` or similar package needed.
+
+> [!NOTE]
+> **Offline-first — ✅ Firebase offline persistence.** Enable `FirebaseFirestore.instance.settings = const Settings(persistenceEnabled: true)` at bootstrap. All Firestore reads/writes cache locally; the app works without a network connection and syncs when back online.
+
+> [!NOTE]
+> **Premium Gate — ✅ Background playback only (v1).** Only the background audio playback feature is locked behind the subscription at launch. Price will be configured in App Store Connect / Google Play Console at a later stage. All other features (import, read, highlight, settings) are free.
