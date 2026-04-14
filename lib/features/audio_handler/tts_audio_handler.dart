@@ -223,7 +223,8 @@ class TtsAudioHandler extends BaseAudioHandler {
     await _tts.setVolume(config.volume);
     await _tts.setPitch(config.pitch);
     if (config.voice != null) {
-      await _tts.setVoice({'name': config.voice!, 'locale': config.language});
+      // Cast the dynamic map to Map<String, String> required by flutter_tts
+      await _tts.setVoice(Map<String, String>.from(config.voice!));
     }
   }
 

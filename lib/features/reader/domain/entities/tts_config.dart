@@ -1,11 +1,14 @@
 import 'package:equatable/equatable.dart';
 
+enum ReaderMode { textOnly, originalPdf }
+
 class TtsConfig extends Equatable {
   final double speed;   // 0.5 – 3.0
   final double pitch;   // 0.5 – 2.0
   final double volume;  // 0.0 – 1.0
   final String language;
-  final String? voice;
+  final Map<String, dynamic>? voice; // Store the complex map from flutterTts.getVoices
+  final ReaderMode readerMode;
 
   const TtsConfig({
     this.speed = 1.0,
@@ -13,6 +16,7 @@ class TtsConfig extends Equatable {
     this.volume = 1.0,
     this.language = 'en-US',
     this.voice,
+    this.readerMode = ReaderMode.textOnly,
   });
 
   TtsConfig copyWith({
@@ -20,7 +24,8 @@ class TtsConfig extends Equatable {
     double? pitch,
     double? volume,
     String? language,
-    String? voice,
+    Map<String, dynamic>? voice,
+    ReaderMode? readerMode,
   }) =>
       TtsConfig(
         speed: speed ?? this.speed,
@@ -28,8 +33,9 @@ class TtsConfig extends Equatable {
         volume: volume ?? this.volume,
         language: language ?? this.language,
         voice: voice ?? this.voice,
+        readerMode: readerMode ?? this.readerMode,
       );
 
   @override
-  List<Object?> get props => [speed, pitch, volume, language, voice];
+  List<Object?> get props => [speed, pitch, volume, language, voice, readerMode];
 }

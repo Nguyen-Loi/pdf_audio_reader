@@ -8,8 +8,12 @@ import 'package:pdf_audio_reader/core/router/route_names.dart';
 import 'package:pdf_audio_reader/core/widgets/app_error_widget.dart';
 import 'package:pdf_audio_reader/core/widgets/app_loading.dart';
 import 'package:pdf_audio_reader/core/widgets/gradient_scaffold.dart';
+import 'package:pdf_audio_reader/features/pdf_library/presentation/providers/pdf_library_provider.dart';
+import 'package:pdf_audio_reader/features/reader/domain/entities/tts_config.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/reader_provider.dart';
+import 'package:pdf_audio_reader/features/reader/presentation/providers/tts_config_provider.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/widgets/highlighted_text_view.dart';
+import 'package:pdf_audio_reader/features/reader/presentation/widgets/pdf_highlight_overlay.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/widgets/player_controls_bar.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/widgets/speed_selector.dart';
 import 'package:pdf_audio_reader/features/subscription/presentation/providers/subscription_provider.dart';
@@ -24,21 +28,26 @@ class ReaderPage extends ConsumerStatefulWidget {
 
 class _ReaderPageState extends ConsumerState<ReaderPage> {
   final _scrollController = ScrollController();
+  late final ReaderNotifier _readerNotifier;
 
   @override
   void initState() {
     super.initState();
+    _readerNotifier = ref.read(readerProvider.notifier);
+    
     // Open PDF after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(readerProvider.notifier).openPdf(pdfId: widget.pdfId);
+      if (mounted) {
+        _readerNotifier.openPdf(pdfId: widget.pdfId);
+      }
     });
   }
 
   @override
   void dispose() {
     // Save progress on close
-    ref.read(readerProvider.notifier).saveProgress();
-    ref.read(readerProvider.notifier).stop();
+    _readerNotifier.saveProgress();
+    _readerNotifier.stop();
     _scrollController.dispose();
     super.dispose();
   }
@@ -60,9 +69,8 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                       .openPdf(pdfId: widget.pdfId),
                 )
               : _buildReaderContent(state, isPremium),
-      bottomNavigationBar: state.document != null
-          ? const PlayerControlsBar()
-          : null,
+      bottomNavigationBar:
+          state.document != null ? const PlayerControlsBar() : null,
     );
   }
 
@@ -106,6 +114,17 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
 
     final pageIndex = state.position.pageIndex;
     final page = doc.pages[pageIndex];
+    final readerMode = ref.watch(ttsConfigProvider).readerMode;
+
+    if (readerMode == ReaderMode.originalPdf) {
+      final library = ref.watch(pdfLibraryProvider).valueOrNull ?? [];
+      final docInfo = library.firstWhere((d) => d.id == widget.pdfId);
+
+      return PdfHighlightOverlay(
+        filePath: docInfo.filePath,
+        currentPageIndex: pageIndex,
+      );
+    }
 
     return SingleChildScrollView(
       controller: _scrollController,
@@ -128,8 +147,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                 ),
                 decoration: BoxDecoration(
                   gradient: AppColors.primaryGradient,
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusFull),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
                 ),
                 child: Text(
                   'Page ${pageIndex + 1} / ${doc.pageCount}',

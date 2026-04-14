@@ -89,9 +89,8 @@ class ReaderNotifier extends StateNotifier<ReaderState> {
         startOffset: startOffset,
       );
 
-      // Wire highlight provider to current page text
-      final pageText = parseResult.pages[startPage].text;
-      _ref.read(highlightProvider.notifier).setPageText(pageText);
+      // Wire highlight provider to current page
+      _ref.read(highlightProvider.notifier).setParsedPage(parseResult.pages[startPage]);
 
       // Listen for page-complete events
       _eventSub?.cancel();
@@ -142,7 +141,7 @@ class ReaderNotifier extends StateNotifier<ReaderState> {
     if (doc == null || pageIndex < 0 || pageIndex >= doc.pageCount) return;
     await _ref.read(audioHandlerProvider).skipToPage(pageIndex);
     _ref.read(highlightProvider.notifier)
-        .setPageText(doc.pages[pageIndex].text);
+        .setParsedPage(doc.pages[pageIndex]);
     state = state.copyWith(
       position: ReadingPosition(pageIndex: pageIndex, charOffset: 0),
     );

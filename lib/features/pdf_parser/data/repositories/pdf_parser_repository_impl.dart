@@ -1,12 +1,12 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:pdf_audio_reader/core/errors/exceptions.dart';
 import 'package:pdf_audio_reader/core/errors/failures.dart';
-import 'package:pdf_audio_reader/features/pdf_parser/data/datasources/read_pdf_text_datasource.dart';
+import 'package:pdf_audio_reader/features/pdf_parser/data/datasources/syncfusion_pdf_datasource.dart';
 import 'package:pdf_audio_reader/features/pdf_parser/domain/entities/parsed_document.dart';
 import 'package:pdf_audio_reader/features/pdf_parser/domain/repositories/pdf_parser_repository.dart';
 
 class PdfParserRepositoryImpl implements PdfParserRepository {
-  final ReadPdfTextDatasource _datasource;
+  final SyncfusionPdfDatasource _datasource;
   const PdfParserRepositoryImpl(this._datasource);
 
   @override

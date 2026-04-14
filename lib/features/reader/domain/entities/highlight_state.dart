@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'dart:ui'; // For Rect
 
 class HighlightState extends Equatable {
   final int wordStart;
@@ -9,12 +10,15 @@ class HighlightState extends Equatable {
   final int sentenceStart;
   final int sentenceEnd;
 
+  final Rect? currentBounds;
+
   const HighlightState({
     required this.wordStart,
     required this.wordEnd,
     required this.currentWord,
     required this.sentenceStart,
     required this.sentenceEnd,
+    this.currentBounds,
   });
 
   static const empty = HighlightState(
@@ -23,6 +27,7 @@ class HighlightState extends Equatable {
     currentWord: '',
     sentenceStart: 0,
     sentenceEnd: 0,
+    currentBounds: null,
   );
 
   @override
@@ -32,5 +37,6 @@ class HighlightState extends Equatable {
         currentWord,
         sentenceStart,
         sentenceEnd,
+        currentBounds,
       ];
 }

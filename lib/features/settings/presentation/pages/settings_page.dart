@@ -7,6 +7,7 @@ import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
 import 'package:pdf_audio_reader/core/router/route_names.dart';
 import 'package:pdf_audio_reader/core/widgets/gradient_scaffold.dart';
 import 'package:pdf_audio_reader/features/auth/presentation/providers/auth_provider.dart';
+import 'package:pdf_audio_reader/features/reader/domain/entities/tts_config.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/tts_config_provider.dart';
 import 'package:pdf_audio_reader/features/subscription/presentation/providers/subscription_provider.dart';
 
@@ -72,6 +73,34 @@ class SettingsPage extends ConsumerWidget {
 
           const SizedBox(height: AppDimensions.lg),
 
+          const _SectionHeader('View Options'),
+          _SettingsTile(
+            icon: Icons.auto_stories,
+            title: 'Reader Mode',
+            trailing: DropdownButton<ReaderMode>(
+              value: config.readerMode,
+              dropdownColor: AppColors.bgCard,
+              underline: const SizedBox(),
+              items: const [
+                DropdownMenuItem(
+                  value: ReaderMode.textOnly,
+                  child: Text('Plain Text', style: AppTextStyles.bodyMedium),
+                ),
+                DropdownMenuItem(
+                  value: ReaderMode.originalPdf,
+                  child: Text('Original PDF', style: AppTextStyles.bodyMedium),
+                ),
+              ],
+              onChanged: (val) {
+                if (val != null) {
+                  ref.read(ttsConfigProvider.notifier).setReaderMode(val);
+                }
+              },
+            ),
+          ),
+
+          const SizedBox(height: AppDimensions.lg),
+
           // TTS settings
           const _SectionHeader('Text-to-Speech'),
           _SettingsTile(
@@ -84,9 +113,26 @@ class SettingsPage extends ConsumerWidget {
           _SettingsTile(
             icon: Icons.language_outlined,
             title: 'Language',
-            subtitle: config.language,
-            trailing: const Icon(Icons.chevron_right,
-                color: AppColors.textSecondary),
+            trailing: DropdownButton<String>(
+              value: config.language,
+              dropdownColor: AppColors.bgCard,
+              underline: const SizedBox(),
+              items: const [
+                DropdownMenuItem(
+                  value: 'en-US',
+                  child: Text('English', style: AppTextStyles.bodyMedium),
+                ),
+                DropdownMenuItem(
+                  value: 'vi-VN',
+                  child: Text('Vietnamese', style: AppTextStyles.bodyMedium),
+                ),
+              ],
+              onChanged: (val) {
+                if (val != null) {
+                  ref.read(ttsConfigProvider.notifier).setLanguage(val);
+                }
+              },
+            ),
           ),
 
           const SizedBox(height: AppDimensions.lg),

@@ -8,7 +8,8 @@ class TtsConfigNotifier extends StateNotifier<TtsConfig> {
   void setPitch(double pitch) => state = state.copyWith(pitch: pitch);
   void setVolume(double volume) => state = state.copyWith(volume: volume);
   void setLanguage(String lang) => state = state.copyWith(language: lang);
-  void setVoice(String? voice) => state = state.copyWith(voice: voice);
+  void setVoice(Map<String, dynamic>? voice) => state = state.copyWith(voice: voice);
+  void setReaderMode(ReaderMode mode) => state = state.copyWith(readerMode: mode);
 }
 
 final ttsConfigProvider =
