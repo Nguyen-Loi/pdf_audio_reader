@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'word_coordinate.dart';
+import 'package:pdf_audio_reader/features/pdf_parser/domain/entities/word_coordinate.dart';
 
 class ParsedPage extends Equatable {
   final int pageIndex;

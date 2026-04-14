@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/highlight_provider.dart';
-import 'package:pdf_audio_reader/features/reader/presentation/providers/reader_provider.dart';
 
 class PdfHighlightOverlay extends ConsumerStatefulWidget {
   final String filePath;
