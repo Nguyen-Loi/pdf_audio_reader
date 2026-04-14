@@ -3,11 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdf_audio_reader/features/audio_handler/tts_audio_handler.dart';
 import 'package:pdf_audio_reader/services/firebase_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Performs all async initialization before the app renders.
-/// Returns the [TtsAudioHandler] singleton so it can be injected into
-/// [ProviderScope] via an `overrides` list.
-Future<TtsAudioHandler> bootstrap() async {
+/// Returns the [TtsAudioHandler] singleton and [SharedPreferences] instance
+/// so they can be injected into [ProviderScope] via an `overrides` list.
+Future<({TtsAudioHandler handler, SharedPreferences prefs})> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Lock to portrait
@@ -18,6 +19,9 @@ Future<TtsAudioHandler> bootstrap() async {
 
   // Firebase + Firestore offline persistence
   await FirebaseService.initialize();
+
+  // Initialize SharedPreferences
+  final prefs = await SharedPreferences.getInstance();
 
   // Initialize AudioService — returns our handler as a singleton
   final handler = await AudioService.init<TtsAudioHandler>(
@@ -31,5 +35,5 @@ Future<TtsAudioHandler> bootstrap() async {
     ),
   );
 
-  return handler;
+  return (handler: handler, prefs: prefs);
 }

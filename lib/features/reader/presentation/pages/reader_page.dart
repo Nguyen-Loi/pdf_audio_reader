@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+
 import 'package:pdf_audio_reader/core/constants/app_colors.dart';
 import 'package:pdf_audio_reader/core/constants/app_dimensions.dart';
-import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
-import 'package:pdf_audio_reader/core/router/route_names.dart';
 import 'package:pdf_audio_reader/core/widgets/app_error_widget.dart';
 import 'package:pdf_audio_reader/core/widgets/app_loading.dart';
 import 'package:pdf_audio_reader/core/widgets/gradient_scaffold.dart';
@@ -12,10 +10,11 @@ import 'package:pdf_audio_reader/features/pdf_library/presentation/providers/pdf
 import 'package:pdf_audio_reader/features/reader/domain/entities/tts_config.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/reader_provider.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/tts_config_provider.dart';
+import 'package:pdf_audio_reader/features/reader/presentation/providers/ui_state_provider.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/widgets/highlighted_text_view.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/widgets/pdf_highlight_overlay.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/widgets/player_controls_bar.dart';
-import 'package:pdf_audio_reader/features/reader/presentation/widgets/speed_selector.dart';
+import 'package:pdf_audio_reader/features/reader/presentation/widgets/reader_app_bar.dart';
 import 'package:pdf_audio_reader/features/subscription/presentation/providers/subscription_provider.dart';
 
 class ReaderPage extends ConsumerStatefulWidget {
@@ -56,55 +55,53 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(readerProvider);
     final isPremium = ref.watch(subscriptionProvider).isPremium;
+    final uiState = ref.watch(readerUiStateProvider);
 
     return GradientScaffold(
-      appBar: _buildAppBar(context, state, isPremium),
-      body: state.isLoading
-          ? const AppLoading(message: 'Opening PDF…')
-          : state.error != null
-              ? AppErrorWidget(
-                  message: state.error!,
-                  onRetry: () => ref
-                      .read(readerProvider.notifier)
-                      .openPdf(pdfId: widget.pdfId),
-                )
-              : _buildReaderContent(state, isPremium),
-      bottomNavigationBar:
-          state.document != null ? const PlayerControlsBar() : null,
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(
-    BuildContext context,
-    ReaderState state,
-    bool isPremium,
-  ) {
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded),
-        color: AppColors.textSecondary,
-        onPressed: () => context.pop(),
-      ),
-      title: Text(
-        state.document?.title ?? 'Reader',
-        style: AppTextStyles.h3,
-        overflow: TextOverflow.ellipsis,
-      ),
-      actions: [
-        const SpeedSelector(),
-        const SizedBox(width: 8),
-        // Background play lock icon
-        if (!isPremium)
-          IconButton(
-            icon: const Icon(Icons.lock_outlined, size: 20),
-            color: AppColors.accent,
-            tooltip: 'Background play (Premium)',
-            onPressed: () => context.push(RouteNames.paywall),
+      body: Stack(
+        children: [
+          // Main content
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () {
+                if (uiState == ReaderUiState.audioMode) {
+                  ref.read(readerUiStateProvider.notifier).toggleAudioMode();
+                } else {
+                  ref.read(readerUiStateProvider.notifier).toggleHud();
+                }
+              },
+              child: state.isLoading
+                  ? const AppLoading(message: 'Opening PDF…')
+                  : state.error != null
+                      ? AppErrorWidget(
+                          message: state.error!,
+                          onRetry: () => ref
+                              .read(readerProvider.notifier)
+                              .openPdf(pdfId: widget.pdfId),
+                        )
+                      : _buildReaderContent(state, isPremium),
+            ),
           ),
-        const SizedBox(width: 4),
-      ],
+
+          // Top AppBar Overlay
+          if (state.document != null)
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: ReaderAppBar(),
+            ),
+
+          // Bottom Controls Overlay
+          if (state.document != null)
+            const Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: PlayerControlsBar(),
+            ),
+        ],
+      ),
     );
   }
 
@@ -114,9 +111,9 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
 
     final pageIndex = state.position.pageIndex;
     final page = doc.pages[pageIndex];
-    final readerMode = ref.watch(ttsConfigProvider).readerMode;
+    final ttsConfig = ref.watch(ttsConfigProvider);
 
-    if (readerMode == ReaderMode.originalPdf) {
+    if (ttsConfig.readerMode == ReaderMode.originalPdf) {
       final library = ref.watch(pdfLibraryProvider).valueOrNull ?? [];
       final docInfo = library.firstWhere((d) => d.id == widget.pdfId);
 
@@ -128,44 +125,48 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
 
     return SingleChildScrollView(
       controller: _scrollController,
+      scrollDirection: ttsConfig.scrollDirection,
       padding: const EdgeInsets.fromLTRB(
         AppDimensions.pagePadding,
-        AppDimensions.md,
+        AppDimensions.xxxl * 2, // Space for invisible appbar
         AppDimensions.pagePadding,
-        AppDimensions.xxxl,
+        AppDimensions.xxxl * 3, // Space for invisible controls
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Page indicator
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppDimensions.sm,
-                  vertical: AppDimensions.xs,
-                ),
-                decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
-                ),
-                child: Text(
-                  'Page ${pageIndex + 1} / ${doc.pageCount}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
+      child: Container(
+        width: ttsConfig.scrollDirection == Axis.horizontal ? MediaQuery.of(context).size.width : null,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Page indicator relative
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimensions.sm,
+                    vertical: AppDimensions.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
+                  ),
+                  child: Text(
+                    'Page ${pageIndex + 1} / ${doc.pageCount}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppDimensions.lg),
+              ],
+            ),
+            const SizedBox(height: AppDimensions.lg),
 
-          // Karaoke text
-          HighlightedTextView(pageText: page.text),
-          const SizedBox(height: AppDimensions.xl),
-        ],
+            // Karaoke text
+            HighlightedTextView(pageText: page.text),
+            const SizedBox(height: AppDimensions.xl),
+          ],
+        ),
       ),
     );
   }

@@ -17,7 +17,7 @@ class SettingsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
-    final config = ref.watch(ttsConfigProvider);
+    final config = ref.watch(globalTtsConfigProvider);
     final isPremium = ref.watch(subscriptionProvider).isPremium;
 
     return GradientScaffold(
@@ -93,7 +93,31 @@ class SettingsPage extends ConsumerWidget {
               ],
               onChanged: (val) {
                 if (val != null) {
-                  ref.read(ttsConfigProvider.notifier).setReaderMode(val);
+                  ref.read(globalTtsConfigProvider.notifier).setReaderMode(val);
+                }
+              },
+            ),
+          ),
+          _SettingsTile(
+            icon: Icons.swap_vert,
+            title: 'Scroll Direction',
+            trailing: DropdownButton<Axis>(
+              value: config.scrollDirection,
+              dropdownColor: AppColors.bgCard,
+              underline: const SizedBox(),
+              items: const [
+                DropdownMenuItem(
+                  value: Axis.vertical,
+                  child: Text('Vertical', style: AppTextStyles.bodyMedium),
+                ),
+                DropdownMenuItem(
+                  value: Axis.horizontal,
+                  child: Text('Horizontal', style: AppTextStyles.bodyMedium),
+                ),
+              ],
+              onChanged: (val) {
+                if (val != null) {
+                  ref.read(globalTtsConfigProvider.notifier).setScrollDirection(val);
                 }
               },
             ),
@@ -129,7 +153,7 @@ class SettingsPage extends ConsumerWidget {
               ],
               onChanged: (val) {
                 if (val != null) {
-                  ref.read(ttsConfigProvider.notifier).setLanguage(val);
+                  ref.read(globalTtsConfigProvider.notifier).setLanguage(val);
                 }
               },
             ),
