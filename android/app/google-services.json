@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "604564869146",
+    "project_id": "pdf-audio-reader-443",
+    "storage_bucket": "pdf-audio-reader-443.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:604564869146:android:a2c5240f9e904566d741a3",
+        "android_client_info": {
+          "package_name": "com.nguyenloi.pdf_audio_reader"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB7I895cxU9eB9hy3qqjCNH2NmQqB6_E7M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

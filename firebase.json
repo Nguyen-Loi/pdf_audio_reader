@@ -1,17 +1,1 @@
-{
-  "firestore": {
-    "database": "(default)",
-    "location": "asia-southeast1",
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
-  },
-  "auth": {
-    "providers": {
-      "anonymous": true,
-      "googleSignIn": {
-        "oAuthBrandDisplayName": "Pdf Audio Reader",
-        "supportEmail": "support@undefined.firebaseapp.com"
-      }
-    }
-  }
-}
+{"firestore":{"database":"(default)","location":"asia-southeast1","rules":"firestore.rules","indexes":"firestore.indexes.json"},"auth":{"providers":{"anonymous":true,"googleSignIn":{"oAuthBrandDisplayName":"Pdf Audio Reader","supportEmail":"support@undefined.firebaseapp.com"}}},"flutter":{"platforms":{"android":{"default":{"projectId":"pdf-audio-reader-443","appId":"1:604564869146:android:a2c5240f9e904566d741a3","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"pdf-audio-reader-443","appId":"1:604564869146:ios:8e89b48ee19bf57fd741a3","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"macos":{"default":{"projectId":"pdf-audio-reader-443","appId":"1:604564869146:ios:8e89b48ee19bf57fd741a3","uploadDebugSymbols":false,"fileOutput":"macos/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"pdf-audio-reader-443","configurations":{"android":"1:604564869146:android:a2c5240f9e904566d741a3","ios":"1:604564869146:ios:8e89b48ee19bf57fd741a3","macos":"1:604564869146:ios:8e89b48ee19bf57fd741a3","web":"1:604564869146:web:18bbaf9e256d63bed741a3","windows":"1:604564869146:web:3331954ac9838516d741a3"}}}}}}
