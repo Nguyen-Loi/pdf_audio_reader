@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pdf_audio_reader/core/constants/app_colors.dart';
 import 'package:pdf_audio_reader/core/constants/app_dimensions.dart';
 import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
+import 'package:pdf_audio_reader/core/localization/app_localizations.dart';
 import 'package:pdf_audio_reader/core/router/route_names.dart';
 import 'package:pdf_audio_reader/core/widgets/app_error_widget.dart';
 import 'package:pdf_audio_reader/core/widgets/app_loading.dart';
@@ -18,14 +19,15 @@ class LibraryPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final libraryAsync = ref.watch(pdfLibraryProvider);
     final user = ref.watch(currentUserProvider);
 
     return GradientScaffold(
-      appBar: _buildAppBar(context, ref, user?.name ?? 'Library'),
+      appBar: _buildAppBar(context, ref, user?.name ?? l10n.myLibrary),
       floatingActionButton: _buildFab(context, ref),
       body: libraryAsync.when(
-        loading: () => const AppLoading(message: 'Loading library…'),
+        loading: () => AppLoading(message: l10n.loadingLibrary),
         error: (e, _) => AppErrorWidget(
           message: e.toString(),
           onRetry: () => ref.read(pdfLibraryProvider.notifier).refresh(),
@@ -39,6 +41,7 @@ class LibraryPage extends ConsumerWidget {
 
   PreferredSizeWidget _buildAppBar(
       BuildContext context, WidgetRef ref, String name) {
+    final l10n = context.l10n;
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -46,11 +49,11 @@ class LibraryPage extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Hello, $name 👋',
+            l10n.hello(name),
             style: AppTextStyles.bodySmall
                 .copyWith(color: AppColors.textSecondary),
           ),
-          const Text('My Library', style: AppTextStyles.h2),
+          Text(l10n.myLibrary, style: AppTextStyles.h2),
         ],
       ),
       actions: [
@@ -64,6 +67,7 @@ class LibraryPage extends ConsumerWidget {
   }
 
   Widget _buildFab(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     return FloatingActionButton.extended(
       onPressed: () async {
         final error = await ref.read(pdfLibraryProvider.notifier).importPdf();
@@ -75,12 +79,13 @@ class LibraryPage extends ConsumerWidget {
       },
       backgroundColor: AppColors.primary,
       icon: const Icon(Icons.add, color: Colors.white),
-      label: const Text('Import PDF',
+      label: Text(l10n.importPdf,
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
     );
   }
 
   Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppDimensions.pagePadding),
@@ -98,10 +103,10 @@ class LibraryPage extends ConsumerWidget {
                   size: 48, color: AppColors.textDisabled),
             ),
             const SizedBox(height: AppDimensions.lg),
-            const Text('No PDFs yet', style: AppTextStyles.h2),
+            Text(l10n.noPdfsYet, style: AppTextStyles.h2),
             const SizedBox(height: AppDimensions.sm),
             Text(
-              'Tap the button below to import\nyour first PDF',
+              l10n.tapToImportFirstPdf,
               style: AppTextStyles.bodyMedium
                   .copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
@@ -153,6 +158,7 @@ class LibraryPage extends ConsumerWidget {
   }
 
   Future<void> _showOpenOptions(BuildContext context, String pdfId) {
+    final l10n = context.l10n;
     final openOriginalPdf = ReaderPageParams(
         pdfId: pdfId, initialReaderMode: ReaderMode.originalPdf);
     final openTextOnly =
@@ -190,12 +196,9 @@ class LibraryPage extends ConsumerWidget {
                     Icons.picture_as_pdf_rounded,
                     color: AppColors.primary,
                   ),
-                  title: const Text(
-                    'Open original PDF',
-                    style: AppTextStyles.labelLarge,
-                  ),
+                  title: Text(l10n.openOriginalPdf, style: AppTextStyles.labelLarge),
                   subtitle: Text(
-                    'Viewer with original layout',
+                    l10n.viewerWithOriginalLayout,
                     style: AppTextStyles.bodySmall
                         .copyWith(color: AppColors.textSecondary),
                   ),
@@ -212,12 +215,9 @@ class LibraryPage extends ConsumerWidget {
                     Icons.text_snippet_outlined,
                     color: AppColors.primary,
                   ),
-                  title: const Text(
-                    'Open plain text',
-                    style: AppTextStyles.labelLarge,
-                  ),
+                  title: Text(l10n.openPlainText, style: AppTextStyles.labelLarge),
                   subtitle: Text(
-                    'Text-only reader',
+                    l10n.textOnlyReader,
                     style: AppTextStyles.bodySmall
                         .copyWith(color: AppColors.textSecondary),
                   ),
@@ -243,27 +243,28 @@ Future<void> _confirmDelete(
   WidgetRef ref,
   PdfDocumentInfo doc,
 ) async {
+  final l10n = context.l10n;
   final shouldDelete = await showDialog<bool>(
     context: context,
     builder: (dialogContext) {
       return AlertDialog(
         backgroundColor: AppColors.bgCard,
-        title: const Text('Remove PDF?'),
+        title: Text(l10n.removePdf),
         content: Text(
-          'This will delete "${doc.title}" from your library. This action cannot be undone.',
+          l10n.removePdfMessage(doc.title),
           style:
               AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text(
-              'Remove',
-              style: TextStyle(color: AppColors.error),
+            child: Text(
+              l10n.delete,
+              style: const TextStyle(color: AppColors.error),
             ),
           ),
         ],
@@ -297,6 +298,7 @@ class _PdfCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final hasProgress = doc.lastPageIndex != null && doc.pageCount > 0;
     final progress =
         hasProgress ? (doc.lastPageIndex! + 1) / doc.pageCount : 0.0;
@@ -354,38 +356,40 @@ class _PdfCard extends StatelessWidget {
                         }
                       },
                       itemBuilder: (_) => [
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'open_original',
                           child: Row(
                             children: [
                               Icon(Icons.picture_as_pdf_rounded,
                                   color: AppColors.primary, size: 18),
                               SizedBox(width: 8),
-                              Text('Open original PDF'),
+                              Text(l10n.openOriginalPdf),
                             ],
                           ),
                         ),
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'open_plain_text',
                           child: Row(
                             children: [
                               Icon(Icons.text_snippet_outlined,
                                   color: AppColors.primary, size: 18),
                               SizedBox(width: 8),
-                              Text('Open plain text'),
+                              Text(l10n.openPlainText),
                             ],
                           ),
                         ),
                         const PopupMenuDivider(),
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'delete',
                           child: Row(
                             children: [
                               Icon(Icons.delete_outline,
                                   color: AppColors.error, size: 18),
                               SizedBox(width: 8),
-                              Text('Delete',
-                                  style: TextStyle(color: AppColors.error)),
+                              Text(
+                                l10n.delete,
+                                style: const TextStyle(color: AppColors.error),
+                              ),
                             ],
                           ),
                         ),
@@ -409,7 +413,7 @@ class _PdfCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppDimensions.xs),
                   Text(
-                    '${doc.pageCount} pages',
+                    context.l10n.pages(doc.pageCount),
                     style: AppTextStyles.bodySmall,
                   ),
                   if (hasProgress) ...[

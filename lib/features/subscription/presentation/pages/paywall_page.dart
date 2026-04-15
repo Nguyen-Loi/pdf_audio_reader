@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pdf_audio_reader/core/constants/app_colors.dart';
 import 'package:pdf_audio_reader/core/constants/app_dimensions.dart';
 import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
+import 'package:pdf_audio_reader/core/localization/app_localizations.dart';
 import 'package:pdf_audio_reader/core/widgets/gradient_scaffold.dart';
 import 'package:pdf_audio_reader/features/subscription/presentation/providers/subscription_provider.dart';
 
@@ -12,6 +13,7 @@ class PaywallPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final sub = ref.watch(subscriptionProvider);
 
     if (sub.isPremium) {
@@ -57,10 +59,10 @@ class PaywallPage extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: AppDimensions.lg),
-              const Text('Go Premium', style: AppTextStyles.displayMedium),
+              Text(l10n.goPremium, style: AppTextStyles.displayMedium),
               const SizedBox(height: AppDimensions.sm),
               Text(
-                'Unlock background audio playback\nand listen while your screen is off',
+                '${l10n.unlockBackgroundAudioPlayback}\n${l10n.keepReadingWhileScreenIsOff}',
                 style: AppTextStyles.bodyMedium
                     .copyWith(color: AppColors.textSecondary),
                 textAlign: TextAlign.center,
@@ -68,7 +70,8 @@ class PaywallPage extends ConsumerWidget {
               const SizedBox(height: AppDimensions.xl),
 
               // Feature list
-              ..._features.map((f) => _FeatureRow(icon: f.$1, label: f.$2)),
+              ..._features(l10n)
+                  .map((f) => _FeatureRow(icon: f.$1, label: f.$2)),
 
               const Spacer(),
 
@@ -85,12 +88,12 @@ class PaywallPage extends ConsumerWidget {
                       padding: const EdgeInsets.all(18),
                       backgroundColor: AppColors.primary,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusMd),
+                        borderRadius:
+                            BorderRadius.circular(AppDimensions.radiusMd),
                       ),
                     ),
-                    child: const Text(
-                      'Unlock Premium',
+                    child: Text(
+                      l10n.unlockPremium,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -104,7 +107,7 @@ class PaywallPage extends ConsumerWidget {
                   onPressed: () =>
                       ref.read(subscriptionProvider.notifier).restore(),
                   child: Text(
-                    'Restore Purchase',
+                    l10n.restorePurchase,
                     style: AppTextStyles.bodySmall
                         .copyWith(color: AppColors.textSecondary),
                   ),
@@ -115,8 +118,8 @@ class PaywallPage extends ConsumerWidget {
                 const SizedBox(height: AppDimensions.sm),
                 Text(
                   sub.error!,
-                  style: AppTextStyles.bodySmall
-                      .copyWith(color: AppColors.error),
+                  style:
+                      AppTextStyles.bodySmall.copyWith(color: AppColors.error),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -129,11 +132,11 @@ class PaywallPage extends ConsumerWidget {
     );
   }
 
-  static const _features = [
-    (Icons.volume_up_rounded, 'Keep reading while screen is off'),
-    (Icons.music_note_rounded, 'Lock screen & notification controls'),
-    (Icons.cloud_done_outlined, 'All future premium features'),
-  ];
+  List<(IconData, String)> _features(AppLocalizations l10n) => [
+        (Icons.volume_up_rounded, l10n.keepReadingWhileScreenIsOff),
+        (Icons.music_note_rounded, l10n.lockScreenAndNotificationControls),
+        (Icons.cloud_done_outlined, l10n.allFuturePremiumFeatures),
+      ];
 }
 
 class _FeatureRow extends StatelessWidget {

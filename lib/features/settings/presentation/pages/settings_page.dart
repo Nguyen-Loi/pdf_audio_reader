@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:pdf_audio_reader/core/constants/app_colors.dart';
 import 'package:pdf_audio_reader/core/constants/app_dimensions.dart';
 import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
+import 'package:pdf_audio_reader/core/localization/app_localizations.dart';
+import 'package:pdf_audio_reader/core/providers/locale_provider.dart';
 import 'package:pdf_audio_reader/core/router/route_names.dart';
 import 'package:pdf_audio_reader/core/widgets/gradient_scaffold.dart';
 import 'package:pdf_audio_reader/features/auth/presentation/providers/auth_provider.dart';
@@ -16,14 +18,16 @@ class SettingsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final user = ref.watch(currentUserProvider);
     final config = ref.watch(globalTtsConfigProvider);
     final isPremium = ref.watch(subscriptionProvider).isPremium;
+    final appLocale = ref.watch(appLocaleProvider);
 
     return GradientScaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: const Text('Settings', style: AppTextStyles.h2),
+        title: Text(l10n.settings, style: AppTextStyles.h2),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           color: AppColors.textSecondary,
@@ -34,61 +38,60 @@ class SettingsPage extends ConsumerWidget {
         padding: const EdgeInsets.all(AppDimensions.pagePadding),
         children: [
           // Account section
-          const _SectionHeader('Account'),
+          _SectionHeader(l10n.account),
           _SettingsTile(
             icon: Icons.person_outline,
-            title: user?.name ?? 'Guest',
-            subtitle: user?.email ?? 'Not signed in',
+            title: user?.name ?? l10n.guest,
+            subtitle: user?.email ?? l10n.notSignedIn,
             trailing: user != null
                 ? TextButton(
                     onPressed: () =>
                         ref.read(authNotifierProvider.notifier).signOut(),
-                    child: const Text('Sign out',
-                        style: TextStyle(color: AppColors.error)),
+                    child: Text(l10n.signOut,
+                        style: const TextStyle(color: AppColors.error)),
                   )
                 : TextButton(
                     onPressed: () => context.go(RouteNames.login),
-                    child: const Text('Sign in'),
+                    child: Text(l10n.signIn),
                   ),
           ),
 
           const SizedBox(height: AppDimensions.lg),
 
           // Subscription section
-          const _SectionHeader('Subscription'),
+          _SectionHeader(l10n.subscription),
           _SettingsTile(
             icon: Icons.workspace_premium_outlined,
-            title: isPremium ? 'Premium Active ✓' : 'Upgrade to Premium',
+            title: isPremium ? l10n.premiumActive : l10n.upgradeToPremium,
             subtitle: isPremium
-                ? 'Background playback enabled'
-                : 'Unlock background audio playback',
+                ? l10n.backgroundPlaybackEnabled
+                : l10n.unlockBackgroundAudioPlayback,
             trailing: !isPremium
                 ? const Icon(Icons.chevron_right, color: AppColors.accent)
                 : null,
-            onTap: !isPremium
-                ? () => context.push(RouteNames.paywall)
-                : null,
+            onTap: !isPremium ? () => context.push(RouteNames.paywall) : null,
             tileColor: AppColors.accent.withAlpha(20),
           ),
 
           const SizedBox(height: AppDimensions.lg),
 
-          const _SectionHeader('View Options'),
+          _SectionHeader(l10n.viewOptions),
           _SettingsTile(
             icon: Icons.auto_stories,
-            title: 'Reader Mode',
+            title: l10n.readerMode,
             trailing: DropdownButton<ReaderMode>(
               value: config.readerMode,
               dropdownColor: AppColors.bgCard,
               underline: const SizedBox(),
-              items: const [
+              items: [
                 DropdownMenuItem(
                   value: ReaderMode.textOnly,
-                  child: Text('Plain Text', style: AppTextStyles.bodyMedium),
+                  child: Text(l10n.plainText, style: AppTextStyles.bodyMedium),
                 ),
                 DropdownMenuItem(
                   value: ReaderMode.originalPdf,
-                  child: Text('Original PDF', style: AppTextStyles.bodyMedium),
+                  child:
+                      Text(l10n.originalPdf, style: AppTextStyles.bodyMedium),
                 ),
               ],
               onChanged: (val) {
@@ -100,24 +103,26 @@ class SettingsPage extends ConsumerWidget {
           ),
           _SettingsTile(
             icon: Icons.swap_vert,
-            title: 'Scroll Direction',
+            title: l10n.scrollDirection,
             trailing: DropdownButton<Axis>(
               value: config.scrollDirection,
               dropdownColor: AppColors.bgCard,
               underline: const SizedBox(),
-              items: const [
+              items: [
                 DropdownMenuItem(
                   value: Axis.vertical,
-                  child: Text('Vertical', style: AppTextStyles.bodyMedium),
+                  child: Text(l10n.vertical, style: AppTextStyles.bodyMedium),
                 ),
                 DropdownMenuItem(
                   value: Axis.horizontal,
-                  child: Text('Horizontal', style: AppTextStyles.bodyMedium),
+                  child: Text(l10n.horizontal, style: AppTextStyles.bodyMedium),
                 ),
               ],
               onChanged: (val) {
                 if (val != null) {
-                  ref.read(globalTtsConfigProvider.notifier).setScrollDirection(val);
+                  ref
+                      .read(globalTtsConfigProvider.notifier)
+                      .setScrollDirection(val);
                 }
               },
             ),
@@ -126,36 +131,71 @@ class SettingsPage extends ConsumerWidget {
           const SizedBox(height: AppDimensions.lg),
 
           // TTS settings
-          const _SectionHeader('Text-to-Speech'),
+          _SectionHeader(l10n.textToSpeech),
           _SettingsTile(
             icon: Icons.speed_outlined,
-            title: 'Playback Speed',
-            subtitle: '${config.speed}x',
-            trailing: const Icon(Icons.chevron_right,
-                color: AppColors.textSecondary),
+            title: l10n.playbackSpeed,
+            subtitle: '${config.speed.toStringAsFixed(1)}x',
+            child: Row(
+              children: [
+                Expanded(
+                  child: Slider(
+                    value: config.speed,
+                    min: 0.5,
+                    max: 3.0,
+                    divisions: 25,
+                    label: '${config.speed.toStringAsFixed(1)}x',
+                    activeColor: AppColors.primary,
+                    inactiveColor: AppColors.bgSurface,
+                    onChanged: (val) {
+                      ref.read(globalTtsConfigProvider.notifier).setSpeed(val);
+                    },
+                  ),
+                ),
+                SizedBox(
+                  width: 44,
+                  child: Text(
+                    '${config.speed.toStringAsFixed(1)}x',
+                    textAlign: TextAlign.end,
+                    style: AppTextStyles.bodySmall,
+                  ),
+                ),
+              ],
+            ),
           ),
+
+          const SizedBox(height: AppDimensions.lg),
+
+          _SectionHeader(l10n.about),
           _SettingsTile(
-            icon: Icons.language_outlined,
-            title: 'Language',
-            trailing: DropdownButton<String>(
-              value: config.language,
+            icon: Icons.translate,
+            title: l10n.appLanguage,
+            trailing: DropdownButton<Locale>(
+              value: appLocale,
               dropdownColor: AppColors.bgCard,
               underline: const SizedBox(),
-              items: _buildLanguageItems(config.language),
+              items: [
+                DropdownMenuItem(
+                  value: const Locale('en'),
+                  child: Text(l10n.english, style: AppTextStyles.bodyMedium),
+                ),
+                DropdownMenuItem(
+                  value: const Locale('vi'),
+                  child: Text(l10n.vietnamese, style: AppTextStyles.bodyMedium),
+                ),
+              ],
               onChanged: (val) {
                 if (val != null) {
-                  ref.read(globalTtsConfigProvider.notifier).setLanguage(val);
+                  ref.read(appLocaleProvider.notifier).setLocale(val);
                 }
               },
             ),
           ),
 
-          const SizedBox(height: AppDimensions.lg),
-          const _SectionHeader('About'),
-          const _SettingsTile(
+          _SettingsTile(
             icon: Icons.info_outline,
-            title: 'PDF Readcloud',
-            subtitle: 'Version 1.0.0',
+            title: l10n.appName,
+            subtitle: l10n.versionLabel('1.0.0'),
           ),
         ],
       ),
@@ -186,6 +226,7 @@ class _SettingsTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? subtitle;
+  final Widget? child;
   final Widget? trailing;
   final VoidCallback? onTap;
   final Color? tileColor;
@@ -194,6 +235,7 @@ class _SettingsTile extends StatelessWidget {
     required this.icon,
     required this.title,
     this.subtitle,
+    this.child,
     this.trailing,
     this.onTap,
     this.tileColor,
@@ -208,41 +250,53 @@ class _SettingsTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
         border: Border.all(color: const Color(0xFF3A3A5C)),
       ),
-      child: ListTile(
-        onTap: onTap,
-        leading: Icon(icon, color: AppColors.primary),
-        title: Text(title, style: AppTextStyles.bodyMedium),
-        subtitle: subtitle != null
-            ? Text(subtitle!,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                ))
-            : null,
-        trailing: trailing,
-        shape: RoundedRectangleBorder(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Icon(icon, color: AppColors.primary),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: AppTextStyles.bodyMedium),
+                      if (subtitle != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            subtitle!,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      if (child != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: child!,
+                        ),
+                    ],
+                  ),
+                ),
+                if (trailing != null) ...[
+                  const SizedBox(width: 8),
+                  trailing!,
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
-}
-
-List<DropdownMenuItem<String>> _buildLanguageItems(String current) {
-  final items = <String, String>{
-    'en-US': 'English',
-    'vi-VN': 'Vietnamese',
-  };
-
-  if (!items.containsKey(current)) {
-    items[current] = current;
-  }
-
-  return items.entries
-      .map(
-        (entry) => DropdownMenuItem(
-          value: entry.key,
-          child: Text(entry.value, style: AppTextStyles.bodyMedium),
-        ),
-      )
-      .toList();
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf_audio_reader/core/constants/app_colors.dart';
 import 'package:pdf_audio_reader/core/constants/app_dimensions.dart';
 import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
+import 'package:pdf_audio_reader/core/localization/app_localizations.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/reader_provider.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/tts_config_provider.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/voice_selector_provider.dart';
@@ -12,6 +13,7 @@ class VoiceSelectorSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final detectedLocale =
         ref.watch(readerProvider.select((state) => state.detectedLocale));
     final config = ref.watch(ttsConfigProvider);
@@ -52,8 +54,8 @@ class VoiceSelectorSheet extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Voice', style: AppTextStyles.h3),
-                Text('Detected: $detectedLocale',
+                Text(l10n.voice, style: AppTextStyles.h3),
+                Text(l10n.detected(detectedLocale),
                     style: AppTextStyles.bodySmall
                         .copyWith(color: AppColors.textSecondary)),
               ],
@@ -62,8 +64,7 @@ class VoiceSelectorSheet extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Show all languages',
-                    style: AppTextStyles.bodyMedium),
+                Text(l10n.showAllLanguages, style: AppTextStyles.bodyMedium),
                 Switch(
                   value: advanced,
                   onChanged: (value) => ref
@@ -87,7 +88,7 @@ class VoiceSelectorSheet extends ConsumerWidget {
               error: (err, _) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppDimensions.lg),
                 child: Text(
-                  'Unable to load voices: $err',
+                  l10n.unableToLoadVoices(err.toString()),
                   style:
                       AppTextStyles.bodySmall.copyWith(color: AppColors.error),
                 ),
@@ -114,11 +115,12 @@ class _VoiceList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     if (voices.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: AppDimensions.lg),
         child: Text(
-          'No voices available for this language.',
+          l10n.noVoicesAvailableForThisLanguage,
           style:
               AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
         ),
@@ -135,7 +137,7 @@ class _VoiceList extends ConsumerWidget {
         ),
         itemBuilder: (context, index) {
           final voice = voices[index];
-          final voiceName = voice['name']?.toString() ?? 'System Voice';
+          final voiceName = voice['name']?.toString() ?? l10n.systemVoice;
           final voiceLocale = voice['locale']?.toString() ?? fallbackLocale;
           final isSelected = _isSameVoice(selectedVoice, voice);
 

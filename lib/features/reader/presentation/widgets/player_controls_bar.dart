@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf_audio_reader/core/constants/app_colors.dart';
 import 'package:pdf_audio_reader/core/constants/app_dimensions.dart';
 import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
+import 'package:pdf_audio_reader/core/localization/app_localizations.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/reader_provider.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/ui_state_provider.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/widgets/session_settings_modal.dart';
@@ -59,7 +60,7 @@ class _StandardBottomBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(readerProvider);
-    final title = state.title ?? 'Unknown Document';
+    final title = state.title ?? context.l10n.reader;
     final pageIndex = state.position.pageIndex;
     final pageCount = state.pageCount;
 
@@ -190,8 +191,10 @@ class _AudioHub extends ConsumerWidget {
                 },
                 icon: const Icon(Icons.close,
                     color: AppColors.textSecondary, size: 20),
-                label: const Text('Cancel',
-                    style: TextStyle(color: AppColors.textSecondary)),
+                label: Text(
+                  context.l10n.cancel,
+                  style: const TextStyle(color: AppColors.textSecondary),
+                ),
               ),
               const SizedBox(
                 height: 16,
@@ -211,8 +214,10 @@ class _AudioHub extends ConsumerWidget {
                 },
                 icon:
                     const Icon(Icons.tune, color: AppColors.primary, size: 20),
-                label: const Text('Settings',
-                    style: TextStyle(color: AppColors.primary)),
+                label: Text(
+                  context.l10n.settings,
+                  style: const TextStyle(color: AppColors.primary),
+                ),
               ),
             ],
           ),

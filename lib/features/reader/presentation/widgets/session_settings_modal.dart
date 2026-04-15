@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf_audio_reader/core/constants/app_colors.dart';
 import 'package:pdf_audio_reader/core/constants/app_dimensions.dart';
 import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
+import 'package:pdf_audio_reader/core/localization/app_localizations.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/tts_config_provider.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/widgets/voice_selector_sheet.dart';
 
@@ -11,6 +12,7 @@ class SessionSettingsModal extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final sessionConfig = ref.watch(ttsConfigProvider);
 
     return Container(
@@ -46,7 +48,7 @@ class SessionSettingsModal extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Session Settings', style: AppTextStyles.h3),
+                Text(l10n.sessionSettings, style: AppTextStyles.h3),
                 TextButton(
                   onPressed: () {
                     final globalConfig = ref.read(globalTtsConfigProvider);
@@ -60,13 +62,13 @@ class SessionSettingsModal extends ConsumerWidget {
                         .read(ttsConfigProvider.notifier)
                         .setScrollDirection(globalConfig.scrollDirection);
                   },
-                  child: const Text('Reset',
-                      style: TextStyle(color: AppColors.accent)),
+                  child: Text(l10n.reset,
+                      style: const TextStyle(color: AppColors.accent)),
                 ),
               ],
             ),
             const SizedBox(height: AppDimensions.lg),
-            const Text('Speech Speed', style: AppTextStyles.labelSmall),
+            Text(l10n.speechSpeed, style: AppTextStyles.labelSmall),
             Row(
               children: [
                 const Icon(Icons.speed,
@@ -90,7 +92,7 @@ class SessionSettingsModal extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: AppDimensions.md),
-            const Text('Voice', style: AppTextStyles.labelSmall),
+            Text(l10n.voice, style: AppTextStyles.labelSmall),
             Container(
               margin: const EdgeInsets.only(top: 8),
               decoration: BoxDecoration(
@@ -99,12 +101,13 @@ class SessionSettingsModal extends ConsumerWidget {
               ),
               child: ListTile(
                 title: Text(
-                  sessionConfig.voice?['name']?.toString() ?? 'System Default',
+                  sessionConfig.voice?['name']?.toString() ??
+                      l10n.systemDefault,
                   style: AppTextStyles.bodyMedium,
                 ),
                 subtitle: Text(
                   sessionConfig.voice?['locale']?.toString() ??
-                      'Auto (detected by content)',
+                      l10n.autoDetectedByContent,
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -122,7 +125,7 @@ class SessionSettingsModal extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: AppDimensions.md),
-            const Text('Scroll Direction', style: AppTextStyles.labelSmall),
+            Text(l10n.scrollDirection, style: AppTextStyles.labelSmall),
             Container(
               margin: const EdgeInsets.only(top: 8),
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -135,15 +138,16 @@ class SessionSettingsModal extends ConsumerWidget {
                   isExpanded: true,
                   value: sessionConfig.scrollDirection,
                   dropdownColor: AppColors.bgCard,
-                  items: const [
+                  items: [
                     DropdownMenuItem(
                       value: Axis.vertical,
-                      child: Text('Vertical', style: AppTextStyles.bodyMedium),
+                      child:
+                          Text(l10n.vertical, style: AppTextStyles.bodyMedium),
                     ),
                     DropdownMenuItem(
                       value: Axis.horizontal,
-                      child:
-                          Text('Horizontal', style: AppTextStyles.bodyMedium),
+                      child: Text(l10n.horizontal,
+                          style: AppTextStyles.bodyMedium),
                     ),
                   ],
                   onChanged: (val) {

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf_audio_reader/core/constants/app_colors.dart';
 import 'package:pdf_audio_reader/core/constants/app_dimensions.dart';
 import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
+import 'package:pdf_audio_reader/core/localization/app_localizations.dart';
 import 'package:pdf_audio_reader/core/widgets/gradient_scaffold.dart';
 import 'package:pdf_audio_reader/features/auth/presentation/providers/auth_provider.dart';
 import 'package:pdf_audio_reader/features/auth/presentation/widgets/google_sign_in_button.dart';
@@ -12,26 +13,29 @@ class LoginPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final authAsync = ref.watch(authNotifierProvider);
 
     return GradientScaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppDimensions.pagePadding),
+          padding:
+              const EdgeInsets.symmetric(horizontal: AppDimensions.pagePadding),
           child: Column(
             children: [
               const Spacer(flex: 2),
               // Logo / Brand
-              _buildBrandSection(),
+              _buildBrandSection(l10n),
               const Spacer(flex: 2),
               // Sign-in card
-              _buildAuthCard(context, ref, authAsync),
+              _buildAuthCard(context, ref, authAsync, l10n),
               const Spacer(),
               // Guest mode
               TextButton(
-                onPressed: () => ref.read(authNotifierProvider.notifier).signInAnonymously(),
+                onPressed: () =>
+                    ref.read(authNotifierProvider.notifier).signInAnonymously(),
                 child: Text(
-                  'Continue without account',
+                  l10n.continueWithoutAccount,
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                     decoration: TextDecoration.underline,
@@ -47,7 +51,7 @@ class LoginPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildBrandSection() {
+  Widget _buildBrandSection(AppLocalizations l10n) {
     return Column(
       children: [
         // Animated logo container
@@ -72,10 +76,10 @@ class LoginPage extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: AppDimensions.lg),
-        const Text('PDF Readcloud', style: AppTextStyles.displayMedium),
+        Text(l10n.appName, style: AppTextStyles.displayMedium),
         const SizedBox(height: AppDimensions.sm),
         Text(
-          'Listen to your PDFs with\nreal-time word highlighting',
+          l10n.listenToYourPdfsWithRealtimeWordHighlighting,
           style: AppTextStyles.bodyMedium.copyWith(
             color: AppColors.textSecondary,
           ),
@@ -89,6 +93,7 @@ class LoginPage extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     AsyncValue<void> authAsync,
+    AppLocalizations l10n,
   ) {
     return Container(
       padding: const EdgeInsets.all(AppDimensions.lg),
@@ -99,10 +104,10 @@ class LoginPage extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          const Text('Get started', style: AppTextStyles.h2),
+          Text(l10n.getStarted, style: AppTextStyles.h2),
           const SizedBox(height: AppDimensions.xs),
           Text(
-            'Sign in to sync your library across devices',
+            l10n.signInToSyncYourLibraryAcrossDevices,
             style: AppTextStyles.bodySmall.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -128,8 +133,7 @@ class LoginPage extends ConsumerWidget {
             const SizedBox(height: AppDimensions.sm),
             Text(
               authAsync.error.toString(),
-              style: AppTextStyles.bodySmall
-                  .copyWith(color: AppColors.error),
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
               textAlign: TextAlign.center,
             ),
           ],
