@@ -136,7 +136,6 @@ class LibraryPage extends ConsumerWidget {
           doc: pdfs[i],
           onTap: () => context.push(RouteNames.reader,
               extra: ReaderPageParams(pdfId: pdfs[i].id)),
-          onLongPress: () => _showOpenOptions(context, pdfs[i].id),
           onOpenOriginal: () => context.push(
             RouteNames.reader,
             extra: ReaderPageParams(
@@ -154,86 +153,6 @@ class LibraryPage extends ConsumerWidget {
           onDelete: () => _confirmDelete(context, ref, pdfs[i]),
         ),
       ),
-    );
-  }
-
-  Future<void> _showOpenOptions(BuildContext context, String pdfId) {
-    final l10n = context.l10n;
-    final openOriginalPdf = ReaderPageParams(
-        pdfId: pdfId, initialReaderMode: ReaderMode.originalPdf);
-    final openTextOnly =
-        ReaderPageParams(pdfId: pdfId, initialReaderMode: ReaderMode.textOnly);
-    return showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.bgCard,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppDimensions.radiusLg),
-        ),
-      ),
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.only(
-              top: AppDimensions.sm,
-              bottom: AppDimensions.md,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 44,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.bgCardHover,
-                    borderRadius:
-                        BorderRadius.circular(AppDimensions.radiusFull),
-                  ),
-                ),
-                const SizedBox(height: AppDimensions.md),
-                ListTile(
-                  leading: const Icon(
-                    Icons.picture_as_pdf_rounded,
-                    color: AppColors.primary,
-                  ),
-                  title: Text(l10n.openOriginalPdf, style: AppTextStyles.labelLarge),
-                  subtitle: Text(
-                    l10n.viewerWithOriginalLayout,
-                    style: AppTextStyles.bodySmall
-                        .copyWith(color: AppColors.textSecondary),
-                  ),
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    context.push(
-                      RouteNames.reader,
-                      extra: openOriginalPdf,
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.text_snippet_outlined,
-                    color: AppColors.primary,
-                  ),
-                  title: Text(l10n.openPlainText, style: AppTextStyles.labelLarge),
-                  subtitle: Text(
-                    l10n.textOnlyReader,
-                    style: AppTextStyles.bodySmall
-                        .copyWith(color: AppColors.textSecondary),
-                  ),
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    context.push(
-                      RouteNames.reader,
-                      extra: openTextOnly,
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }
@@ -282,7 +201,6 @@ Future<void> _confirmDelete(
 class _PdfCard extends StatelessWidget {
   final PdfDocumentInfo doc;
   final VoidCallback onTap;
-  final VoidCallback onLongPress;
   final VoidCallback onOpenOriginal;
   final VoidCallback onOpenPlainText;
   final VoidCallback onDelete;
@@ -290,7 +208,6 @@ class _PdfCard extends StatelessWidget {
   const _PdfCard({
     required this.doc,
     required this.onTap,
-    required this.onLongPress,
     required this.onOpenOriginal,
     required this.onOpenPlainText,
     required this.onDelete,
@@ -300,12 +217,11 @@ class _PdfCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final hasProgress = doc.lastPageIndex != null && doc.pageCount > 0;
-    final progress =
-        hasProgress ? (doc.lastPageIndex! + 1) / doc.pageCount : 0.0;
+    final currentPage = hasProgress ? doc.lastPageIndex! + 1 : null;
+    final progress = hasProgress ? currentPage! / doc.pageCount : 0.0;
 
     return GestureDetector(
       onTap: onTap,
-      onLongPress: onLongPress,
       child: Container(
         decoration: BoxDecoration(
           gradient: AppColors.cardGradient,
@@ -416,6 +332,14 @@ class _PdfCard extends StatelessWidget {
                     context.l10n.pages(doc.pageCount),
                     style: AppTextStyles.bodySmall,
                   ),
+                  if (hasProgress) ...[
+                    const SizedBox(height: AppDimensions.xs),
+                    Text(
+                      l10n.pageOf(currentPage!, doc.pageCount),
+                      style: AppTextStyles.bodySmall
+                          .copyWith(color: AppColors.textSecondary),
+                    ),
+                  ],
                   if (hasProgress) ...[
                     const SizedBox(height: AppDimensions.xs),
                     LinearProgressIndicator(

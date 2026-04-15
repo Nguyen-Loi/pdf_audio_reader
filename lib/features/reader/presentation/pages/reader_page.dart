@@ -35,7 +35,6 @@ class ReaderPage extends ConsumerStatefulWidget {
 }
 
 class _ReaderPageState extends ConsumerState<ReaderPage> {
-  final _scrollController = ScrollController();
   final _pageController = PageController();
   late final ReaderNotifier _readerNotifier;
   int? _pendingPageIndex;
@@ -73,7 +72,6 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     _readerNotifier.saveProgress();
     _readerNotifier.stop();
     _readerSub?.close();
-    _scrollController.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -157,6 +155,11 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
       return PdfHighlightOverlay(
         filePath: docInfo.filePath,
         currentPageIndex: pageIndex,
+        onPageChanged: (index) {
+          if (index != pageIndex) {
+            ref.read(readerProvider.notifier).skipToPage(index);
+          }
+        },
         scrollDirection: ttsConfig.scrollDirection,
         pageElements: content.pageElements(pageIndex),
         activeSearchMatch: searchState.currentMatch?.pageIndex == pageIndex
@@ -212,49 +215,32 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
       bottomPadding,
     );
 
-    if (ttsConfig.scrollDirection == Axis.horizontal) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _flushPendingPage();
-        }
-      });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _flushPendingPage();
+      }
+    });
 
-      return PageView.builder(
-        controller: _pageController,
-        itemCount: pageCount,
-        onPageChanged: (index) {
-          if (index != currentPageIndex) {
-            ref.read(readerProvider.notifier).skipToPage(index);
-          }
-        },
-        itemBuilder: (context, index) {
-          return SingleChildScrollView(
-            padding: contentPadding,
-            child: _buildPageContent(
-              pageIndex: index,
-              pageCount: pageCount,
-              pageText: pageTexts[index],
-              isActive: index == currentPageIndex,
-              l10n: l10n,
-              searchState: searchState,
-            ),
-          );
-        },
-      );
-    }
-
-    return ListView.builder(
-      controller: _scrollController,
-      padding: contentPadding,
+    return PageView.builder(
+      controller: _pageController,
+      scrollDirection: ttsConfig.scrollDirection,
       itemCount: pageCount,
+      onPageChanged: (index) {
+        if (index != currentPageIndex) {
+          ref.read(readerProvider.notifier).skipToPage(index);
+        }
+      },
       itemBuilder: (context, index) {
-        return _buildPageContent(
-          pageIndex: index,
-          pageCount: pageCount,
-          pageText: pageTexts[index],
-          isActive: index == currentPageIndex,
-          l10n: l10n,
-          searchState: searchState,
+        return SingleChildScrollView(
+          padding: contentPadding,
+          child: _buildPageContent(
+            pageIndex: index,
+            pageCount: pageCount,
+            pageText: pageTexts[index],
+            isActive: index == currentPageIndex,
+            l10n: l10n,
+            searchState: searchState,
+          ),
         );
       },
     );

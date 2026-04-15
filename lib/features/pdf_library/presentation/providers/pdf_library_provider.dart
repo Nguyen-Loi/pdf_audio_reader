@@ -52,10 +52,43 @@ class PdfLibraryNotifier extends AsyncNotifier<List<PdfDocumentInfo>> {
     );
   }
 
+  Future<void> updatePageCount({
+    required String id,
+    required int pageCount,
+  }) async {
+    final docs = state.valueOrNull;
+    if (docs == null) return;
+
+    final index = docs.indexWhere((doc) => doc.id == id);
+    if (index == -1) return;
+
+    final updatedDocs = [...docs];
+    updatedDocs[index] = updatedDocs[index].copyWith(pageCount: pageCount);
+    state = AsyncData(updatedDocs);
+  }
+
+  Future<void> updateReadingProgress({
+    required String id,
+    required int pageIndex,
+    required int charOffset,
+  }) async {
+    final docs = state.valueOrNull;
+    if (docs == null) return;
+
+    final index = docs.indexWhere((doc) => doc.id == id);
+    if (index == -1) return;
+
+    final updatedDocs = [...docs];
+    updatedDocs[index] = updatedDocs[index].copyWith(
+      lastPageIndex: pageIndex,
+      lastCharOffset: charOffset,
+    );
+    state = AsyncData(updatedDocs);
+  }
+
   Future<void> refresh() async {
     state = const AsyncLoading();
-    final result =
-        await ref.read(pdfLibraryRepositoryProvider).getPdfList();
+    final result = await ref.read(pdfLibraryRepositoryProvider).getPdfList();
     state = result.fold(
       (f) => AsyncError(f, StackTrace.current),
       (list) => AsyncData(list),

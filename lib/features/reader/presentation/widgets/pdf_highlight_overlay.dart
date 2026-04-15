@@ -12,6 +12,7 @@ import 'package:pdf_audio_reader/features/reader/presentation/providers/ui_state
 class PdfHighlightOverlay extends ConsumerStatefulWidget {
   final String filePath;
   final int currentPageIndex;
+  final ValueChanged<int> onPageChanged;
   final Axis scrollDirection;
   final List<TextElement> pageElements;
   final TextMatch? activeSearchMatch;
@@ -20,6 +21,7 @@ class PdfHighlightOverlay extends ConsumerStatefulWidget {
     super.key,
     required this.filePath,
     required this.currentPageIndex,
+    required this.onPageChanged,
     required this.scrollDirection,
     required this.pageElements,
     required this.activeSearchMatch,
@@ -108,6 +110,12 @@ class _PdfHighlightOverlayState extends ConsumerState<PdfHighlightOverlay> {
                   _pdfViewerController.jumpToPage(widget.currentPageIndex + 1);
                 }
                 _applySearchHighlight();
+              },
+              onPageChanged: (details) {
+                final newPageIndex = details.newPageNumber - 1;
+                if (newPageIndex != widget.currentPageIndex) {
+                  widget.onPageChanged(newPageIndex);
+                }
               },
             ),
             // Transparent tap overlay to detect taps

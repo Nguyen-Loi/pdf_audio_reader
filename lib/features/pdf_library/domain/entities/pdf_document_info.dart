@@ -49,8 +49,7 @@ class PdfDocumentInfo extends Equatable {
         'lastCharOffset': lastCharOffset,
       };
 
-  factory PdfDocumentInfo.fromMap(Map<String, dynamic> map) =>
-      PdfDocumentInfo(
+  factory PdfDocumentInfo.fromMap(Map<String, dynamic> map) => PdfDocumentInfo(
         id: map['id'] as String,
         title: map['title'] as String,
         filePath: map['filePath'] as String,
@@ -61,5 +60,13 @@ class PdfDocumentInfo extends Equatable {
       );
 
   @override
-  List<Object?> get props => [id, title, filePath, pageCount, importedAt];
+  List<Object?> get props => [
+        id,
+        title,
+        filePath,
+        pageCount,
+        importedAt,
+        lastPageIndex,
+        lastCharOffset,
+      ];
 }

@@ -102,6 +102,10 @@ class ReaderNotifier extends StateNotifier<ReaderState> {
       if (docInfo.pageCount != parseResult.pageCount) {
         final ds = _ref.read(pdfDatasourceProvider);
         await ds.updatePageCount(pdfId, parseResult.pageCount);
+        await _ref.read(pdfLibraryProvider.notifier).updatePageCount(
+              id: pdfId,
+              pageCount: parseResult.pageCount,
+            );
       }
 
       // Determine starting position
@@ -280,7 +284,7 @@ class ReaderNotifier extends StateNotifier<ReaderState> {
     if (content == null || pageIndex < 0 || pageIndex >= content.pageCount) {
       return;
     }
-    await _ref.read(audioHandlerProvider).skipToPage(pageIndex);
+
     _ref.read(highlightProvider.notifier).setPageData(
           pageIndex: pageIndex,
           pageText: content.pageText(pageIndex),
@@ -290,6 +294,8 @@ class ReaderNotifier extends StateNotifier<ReaderState> {
     state = state.copyWith(
       position: ReadingPosition(pageIndex: pageIndex, charOffset: 0),
     );
+
+    await _ref.read(audioHandlerProvider).skipToPage(pageIndex);
   }
 
   Future<void> applyConfig(TtsConfig config) async {
@@ -304,13 +310,20 @@ class ReaderNotifier extends StateNotifier<ReaderState> {
   Future<void> saveProgress() async {
     final contentId = state.contentId;
     if (contentId == null) return;
-    final handler = _ref.read(audioHandlerProvider);
     final ds = _ref.read(pdfDatasourceProvider);
+    final pageIndex = state.position.pageIndex;
+    final charOffset = state.position.charOffset;
+
     await ds.saveReadingProgress(
       id: contentId,
-      pageIndex: handler.currentPageIndex,
-      charOffset: handler.currentCharOffset,
+      pageIndex: pageIndex,
+      charOffset: charOffset,
     );
+    await _ref.read(pdfLibraryProvider.notifier).updateReadingProgress(
+          id: contentId,
+          pageIndex: pageIndex,
+          charOffset: charOffset,
+        );
   }
 
   Future<String> _detectContentLocale(ReaderContent content) async {
