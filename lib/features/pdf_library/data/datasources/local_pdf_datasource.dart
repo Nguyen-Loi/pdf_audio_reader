@@ -1,29 +1,52 @@
+import 'dart:convert';
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf_audio_reader/core/errors/exceptions.dart';
 import 'package:pdf_audio_reader/core/utils/logger.dart';
 import 'package:pdf_audio_reader/features/pdf_library/domain/entities/pdf_document_info.dart';
 import 'package:uuid/uuid.dart';
 
-/// Saves PDF files to app documents dir and persists metadata to Firestore.
+/// Saves PDF files and metadata locally in app documents directory.
 class LocalPdfDatasource {
-  final String? userId;
+  LocalPdfDatasource({String? userId});
 
-  LocalPdfDatasource({this.userId});
+  Future<File> get _indexFile async {
+    final appDir = await getApplicationDocumentsDirectory();
+    final file = File('${appDir.path}/pdf_library_index.json');
+    if (!await file.exists()) {
+      await file.writeAsString('[]');
+    }
+    return file;
+  }
 
-  CollectionReference<Map<String, dynamic>> get _col =>
-      FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId ?? 'guest')
-          .collection('pdfs');
+  Future<List<PdfDocumentInfo>> _readIndex() async {
+    final file = await _indexFile;
+    final raw = await file.readAsString();
+    if (raw.trim().isEmpty) {
+      return [];
+    }
+
+    final decoded = jsonDecode(raw);
+    if (decoded is! List) {
+      throw const StorageException('Invalid local PDF index format');
+    }
+
+    return decoded
+        .whereType<Map<String, dynamic>>()
+        .map(PdfDocumentInfo.fromMap)
+        .toList();
+  }
+
+  Future<void> _writeIndex(List<PdfDocumentInfo> docs) async {
+    final file = await _indexFile;
+    await file.writeAsString(jsonEncode(docs.map((e) => e.toMap()).toList()));
+  }
 
   Future<List<PdfDocumentInfo>> getPdfList() async {
     try {
-      final snap = await _col.orderBy('importedAt', descending: true).get();
-      return snap.docs
-          .map((d) => PdfDocumentInfo.fromMap(d.data()))
-          .toList();
+      final docs = await _readIndex();
+      docs.sort((a, b) => b.importedAt.compareTo(a.importedAt));
+      return docs;
     } catch (e) {
       AppLogger.e('getPdfList failed', e);
       throw StorageException(e.toString());
@@ -51,7 +74,9 @@ class LocalPdfDatasource {
         importedAt: DateTime.now(),
       );
 
-      await _col.doc(doc.id).set(doc.toMap());
+      final docs = await _readIndex();
+      docs.add(doc);
+      await _writeIndex(docs);
       return doc;
     } catch (e) {
       AppLogger.e('importPdf failed', e);
@@ -61,13 +86,22 @@ class LocalPdfDatasource {
 
   Future<void> deletePdf(String id) async {
     try {
-      // Delete from Firestore
-      await _col.doc(id).delete();
-      // Delete local file
-      final appDir = await getApplicationDocumentsDirectory();
-      final file = File('${appDir.path}/$id.pdf');
+      final docs = await _readIndex();
+      final target =
+          docs.where((d) => d.id == id).cast<PdfDocumentInfo?>().firstWhere(
+                (d) => d != null,
+                orElse: () => null,
+              );
+      docs.removeWhere((d) => d.id == id);
+      await _writeIndex(docs);
+
+      final filePath = target?.filePath;
+      final file = filePath != null
+          ? File(filePath)
+          : File('${(await getApplicationDocumentsDirectory()).path}/$id.pdf');
       if (await file.exists()) await file.delete();
     } catch (e) {
+      AppLogger.e('deletePdf failed', e);
       throw StorageException(e.toString());
     }
   }
@@ -77,13 +111,37 @@ class LocalPdfDatasource {
     required int pageIndex,
     required int charOffset,
   }) async {
-    await _col.doc(id).update({
-      'lastPageIndex': pageIndex,
-      'lastCharOffset': charOffset,
-    });
+    try {
+      final docs = await _readIndex();
+      final index = docs.indexWhere((d) => d.id == id);
+      if (index == -1) {
+        throw StorageException('PDF not found: $id');
+      }
+
+      docs[index] = docs[index].copyWith(
+        lastPageIndex: pageIndex,
+        lastCharOffset: charOffset,
+      );
+      await _writeIndex(docs);
+    } catch (e) {
+      AppLogger.e('saveReadingProgress failed', e);
+      throw StorageException(e.toString());
+    }
   }
 
   Future<void> updatePageCount(String id, int pageCount) async {
-    await _col.doc(id).update({'pageCount': pageCount});
+    try {
+      final docs = await _readIndex();
+      final index = docs.indexWhere((d) => d.id == id);
+      if (index == -1) {
+        throw StorageException('PDF not found: $id');
+      }
+
+      docs[index] = docs[index].copyWith(pageCount: pageCount);
+      await _writeIndex(docs);
+    } catch (e) {
+      AppLogger.e('updatePageCount failed', e);
+      throw StorageException(e.toString());
+    }
   }
 }
