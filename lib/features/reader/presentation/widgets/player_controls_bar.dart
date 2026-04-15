@@ -4,7 +4,6 @@ import 'package:pdf_audio_reader/core/constants/app_colors.dart';
 import 'package:pdf_audio_reader/core/constants/app_dimensions.dart';
 import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/reader_provider.dart';
-import 'package:pdf_audio_reader/features/reader/presentation/providers/tts_config_provider.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/ui_state_provider.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/widgets/session_settings_modal.dart';
 
@@ -16,7 +15,8 @@ class PlayerControlsBar extends ConsumerWidget {
     final uiState = ref.watch(readerUiStateProvider);
 
     return AnimatedSlide(
-      offset: uiState == ReaderUiState.fullPage ? const Offset(0, 1) : Offset.zero,
+      offset:
+          uiState == ReaderUiState.fullPage ? const Offset(0, 1) : Offset.zero,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       child: AnimatedOpacity(
@@ -62,47 +62,28 @@ class _StandardBottomBar extends ConsumerWidget {
     final title = state.document?.title ?? 'Unknown Document';
     final pageIndex = state.position.pageIndex;
     final pageCount = state.document?.pageCount ?? 0;
-    final ttsConfig = ref.watch(ttsConfigProvider);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.md, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppDimensions.md, vertical: 12),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              IconButton(
-                icon: Icon(
-                  ttsConfig.scrollDirection == Axis.vertical
-                      ? Icons.screen_rotation
-                      : Icons.stay_current_landscape,
-                  color: AppColors.textSecondary,
-                ),
-                onPressed: () {
-                  final current = ttsConfig.scrollDirection;
-                  final next = current == Axis.vertical ? Axis.horizontal : Axis.vertical;
-                  ref.read(ttsConfigProvider.notifier).setScrollDirection(next);
-                },
-                tooltip: 'Toggle Scroll Direction',
-              ),
-              Expanded(
-                child: Text(
-                  title,
-                  style: AppTextStyles.labelLarge,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 48), // Balance left icon
-            ],
+          Text(
+            title,
+            style: AppTextStyles.labelLarge,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
+          const SizedBox(height: 4),
           if (pageCount > 1)
             Row(
               children: [
                 Text(
                   '${pageIndex + 1}',
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  style: const TextStyle(
+                      color: AppColors.textSecondary, fontSize: 12),
                 ),
                 Expanded(
                   child: Slider(
@@ -110,14 +91,16 @@ class _StandardBottomBar extends ConsumerWidget {
                     min: 0,
                     max: (pageCount - 1 > 0 ? pageCount - 1 : 1).toDouble(),
                     divisions: pageCount - 1 > 0 ? pageCount - 1 : 1,
-                    onChanged: (v) => ref.read(readerProvider.notifier).skipToPage(v.round()),
+                    onChanged: (v) =>
+                        ref.read(readerProvider.notifier).skipToPage(v.round()),
                     activeColor: AppColors.primary,
                     inactiveColor: AppColors.bgSurface,
                   ),
                 ),
                 Text(
                   '$pageCount',
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  style: const TextStyle(
+                      color: AppColors.textSecondary, fontSize: 12),
                 ),
               ],
             ),
@@ -146,7 +129,9 @@ class _AudioHub extends ConsumerWidget {
               _ControlButton(
                 icon: Icons.skip_previous_rounded,
                 onPressed: state.position.pageIndex > 0
-                    ? () => ref.read(readerProvider.notifier).skipToPage(state.position.pageIndex - 1)
+                    ? () => ref
+                        .read(readerProvider.notifier)
+                        .skipToPage(state.position.pageIndex - 1)
                     : null,
               ),
               const SizedBox(width: AppDimensions.xl),
@@ -184,8 +169,11 @@ class _AudioHub extends ConsumerWidget {
               _ControlButton(
                 icon: Icons.skip_next_rounded,
                 onPressed: (state.document?.pageCount ?? 0) > 0 &&
-                        state.position.pageIndex < (state.document?.pageCount ?? 1) - 1
-                    ? () => ref.read(readerProvider.notifier).skipToPage(state.position.pageIndex + 1)
+                        state.position.pageIndex <
+                            (state.document?.pageCount ?? 1) - 1
+                    ? () => ref
+                        .read(readerProvider.notifier)
+                        .skipToPage(state.position.pageIndex + 1)
                     : null,
               ),
             ],
@@ -199,8 +187,10 @@ class _AudioHub extends ConsumerWidget {
                   ref.read(readerProvider.notifier).pause();
                   ref.read(readerUiStateProvider.notifier).setFullPage();
                 },
-                icon: const Icon(Icons.close, color: AppColors.textSecondary, size: 20),
-                label: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+                icon: const Icon(Icons.close,
+                    color: AppColors.textSecondary, size: 20),
+                label: const Text('Cancel',
+                    style: TextStyle(color: AppColors.textSecondary)),
               ),
               const SizedBox(width: AppDimensions.xxxl),
               TextButton.icon(
@@ -212,8 +202,10 @@ class _AudioHub extends ConsumerWidget {
                     builder: (context) => const SessionSettingsModal(),
                   );
                 },
-                icon: const Icon(Icons.tune, color: AppColors.primary, size: 20),
-                label: const Text('Settings', style: TextStyle(color: AppColors.primary)),
+                icon:
+                    const Icon(Icons.tune, color: AppColors.primary, size: 20),
+                label: const Text('Settings',
+                    style: TextStyle(color: AppColors.primary)),
               ),
             ],
           ),

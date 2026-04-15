@@ -40,28 +40,37 @@ class GlobalTtsConfigNotifier extends StateNotifier<TtsConfig> {
   void setPitch(double pitch) => updateConfig(state.copyWith(pitch: pitch));
   void setVolume(double volume) => updateConfig(state.copyWith(volume: volume));
   void setLanguage(String lang) => updateConfig(state.copyWith(language: lang));
-  void setVoice(Map<String, dynamic>? voice) => updateConfig(state.copyWith(voice: voice));
-  void setReaderMode(ReaderMode mode) => updateConfig(state.copyWith(readerMode: mode));
-  void setScrollDirection(Axis direction) => updateConfig(state.copyWith(scrollDirection: direction));
+  void setVoice(Map<String, dynamic>? voice) =>
+      updateConfig(state.copyWith(voice: voice));
+  void setReaderMode(ReaderMode mode) =>
+      updateConfig(state.copyWith(readerMode: mode));
+  void setScrollDirection(Axis direction) =>
+      updateConfig(state.copyWith(scrollDirection: direction));
 }
 
-final globalTtsConfigProvider = StateNotifierProvider<GlobalTtsConfigNotifier, TtsConfig>((ref) {
+final globalTtsConfigProvider =
+    StateNotifierProvider<GlobalTtsConfigNotifier, TtsConfig>((ref) {
   return GlobalTtsConfigNotifier(ref);
 });
 
 class SessionTtsConfigNotifier extends StateNotifier<TtsConfig> {
-  SessionTtsConfigNotifier(TtsConfig initial) : super(initial);
+  SessionTtsConfigNotifier(super.initial);
 
   void setSpeed(double speed) => state = state.copyWith(speed: speed);
   void setPitch(double pitch) => state = state.copyWith(pitch: pitch);
   void setVolume(double volume) => state = state.copyWith(volume: volume);
   void setLanguage(String lang) => state = state.copyWith(language: lang);
-  void setVoice(Map<String, dynamic>? voice) => state = state.copyWith(voice: voice);
-  void setReaderMode(ReaderMode mode) => state = state.copyWith(readerMode: mode);
-  void setScrollDirection(Axis direction) => state = state.copyWith(scrollDirection: direction);
+  void setVoice(Map<String, dynamic>? voice) =>
+      state = state.copyWith(voice: voice);
+  void setReaderMode(ReaderMode mode) =>
+      state = state.copyWith(readerMode: mode);
+  void setScrollDirection(Axis direction) =>
+      state = state.copyWith(scrollDirection: direction);
 }
 
-final ttsConfigProvider = StateNotifierProvider.autoDispose<SessionTtsConfigNotifier, TtsConfig>((ref) {
+final ttsConfigProvider =
+    StateNotifierProvider.autoDispose<SessionTtsConfigNotifier, TtsConfig>(
+        (ref) {
   final global = ref.read(globalTtsConfigProvider);
   return SessionTtsConfigNotifier(global);
 });

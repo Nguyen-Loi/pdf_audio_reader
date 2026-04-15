@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:pdf_audio_reader/core/constants/app_colors.dart';
 import 'package:pdf_audio_reader/core/constants/app_dimensions.dart';
+import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
 import 'package:pdf_audio_reader/core/widgets/app_error_widget.dart';
 import 'package:pdf_audio_reader/core/widgets/app_loading.dart';
 import 'package:pdf_audio_reader/core/widgets/gradient_scaffold.dart';
@@ -27,13 +28,23 @@ class ReaderPage extends ConsumerStatefulWidget {
 
 class _ReaderPageState extends ConsumerState<ReaderPage> {
   final _scrollController = ScrollController();
+  final _pageController = PageController();
   late final ReaderNotifier _readerNotifier;
+  int? _pendingPageIndex;
+  ProviderSubscription<ReaderState>? _readerSub;
 
   @override
   void initState() {
     super.initState();
     _readerNotifier = ref.read(readerProvider.notifier);
-    
+
+    _readerSub =
+        ref.listenManual<ReaderState>(readerProvider, (previous, next) {
+      if (previous?.position.pageIndex != next.position.pageIndex) {
+        _syncPageController(next.position.pageIndex);
+      }
+    });
+
     // Open PDF after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -47,7 +58,9 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     // Save progress on close
     _readerNotifier.saveProgress();
     _readerNotifier.stop();
+    _readerSub?.close();
     _scrollController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -110,7 +123,6 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     if (doc == null) return const SizedBox.shrink();
 
     final pageIndex = state.position.pageIndex;
-    final page = doc.pages[pageIndex];
     final ttsConfig = ref.watch(ttsConfigProvider);
 
     if (ttsConfig.readerMode == ReaderMode.originalPdf) {
@@ -120,54 +132,143 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
       return PdfHighlightOverlay(
         filePath: docInfo.filePath,
         currentPageIndex: pageIndex,
+        scrollDirection: ttsConfig.scrollDirection,
       );
     }
 
-    return SingleChildScrollView(
-      controller: _scrollController,
-      scrollDirection: ttsConfig.scrollDirection,
-      padding: const EdgeInsets.fromLTRB(
-        AppDimensions.pagePadding,
-        AppDimensions.xxxl * 2, // Space for invisible appbar
-        AppDimensions.pagePadding,
-        AppDimensions.xxxl * 3, // Space for invisible controls
-      ),
-      child: Container(
-        width: ttsConfig.scrollDirection == Axis.horizontal ? MediaQuery.of(context).size.width : null,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Page indicator relative
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimensions.sm,
-                    vertical: AppDimensions.xs,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: AppColors.primaryGradient,
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
-                  ),
-                  child: Text(
-                    'Page ${pageIndex + 1} / ${doc.pageCount}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppDimensions.lg),
+    return _buildTextReaderContent(
+      doc.pageCount,
+      doc.pages.map((p) => p.text).toList(),
+      ttsConfig,
+      pageIndex,
+    );
+  }
 
-            // Karaoke text
-            HighlightedTextView(pageText: page.text),
-            const SizedBox(height: AppDimensions.xl),
+  void _syncPageController(int pageIndex) {
+    if (_pageController.hasClients) {
+      final currentPage =
+          _pageController.page?.round() ?? _pageController.initialPage;
+      if (currentPage != pageIndex) {
+        _pageController.jumpToPage(pageIndex);
+      }
+    } else {
+      _pendingPageIndex = pageIndex;
+    }
+  }
+
+  void _flushPendingPage() {
+    final pending = _pendingPageIndex;
+    if (pending == null || !_pageController.hasClients) return;
+    _pageController.jumpToPage(pending);
+    _pendingPageIndex = null;
+  }
+
+  Widget _buildTextReaderContent(
+    int pageCount,
+    List<String> pageTexts,
+    TtsConfig ttsConfig,
+    int currentPageIndex,
+  ) {
+    final mediaPadding = MediaQuery.of(context).padding;
+    final topPadding = mediaPadding.top + AppDimensions.md;
+    final bottomPadding = mediaPadding.bottom + AppDimensions.md;
+    final contentPadding = EdgeInsets.fromLTRB(
+      AppDimensions.pagePadding,
+      topPadding,
+      AppDimensions.pagePadding,
+      bottomPadding,
+    );
+
+    if (ttsConfig.scrollDirection == Axis.horizontal) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _flushPendingPage();
+        }
+      });
+
+      return PageView.builder(
+        controller: _pageController,
+        itemCount: pageCount,
+        onPageChanged: (index) {
+          if (index != currentPageIndex) {
+            ref.read(readerProvider.notifier).skipToPage(index);
+          }
+        },
+        itemBuilder: (context, index) {
+          return SingleChildScrollView(
+            padding: contentPadding,
+            child: _buildPageContent(
+              pageIndex: index,
+              pageCount: pageCount,
+              pageText: pageTexts[index],
+              isActive: index == currentPageIndex,
+            ),
+          );
+        },
+      );
+    }
+
+    return ListView.builder(
+      controller: _scrollController,
+      padding: contentPadding,
+      itemCount: pageCount,
+      itemBuilder: (context, index) {
+        return _buildPageContent(
+          pageIndex: index,
+          pageCount: pageCount,
+          pageText: pageTexts[index],
+          isActive: index == currentPageIndex,
+        );
+      },
+    );
+  }
+
+  Widget _buildPageContent({
+    required int pageIndex,
+    required int pageCount,
+    required String pageText,
+    required bool isActive,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimensions.sm,
+                vertical: AppDimensions.xs,
+              ),
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
+              ),
+              child: Text(
+                'Page ${pageIndex + 1} / $pageCount',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           ],
         ),
-      ),
+        const SizedBox(height: AppDimensions.lg),
+        _buildPageText(pageText, isActive),
+        const SizedBox(height: AppDimensions.xl),
+      ],
     );
+  }
+
+  Widget _buildPageText(String pageText, bool isActive) {
+    if (pageText.isEmpty) {
+      return const Text('No text on this page',
+          style: AppTextStyles.bodyMedium);
+    }
+    if (isActive) {
+      return HighlightedTextView(pageText: pageText);
+    }
+    return Text(pageText, style: AppTextStyles.readerBody);
   }
 }

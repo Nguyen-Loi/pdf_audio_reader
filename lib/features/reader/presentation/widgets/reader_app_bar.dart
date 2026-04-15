@@ -53,7 +53,6 @@ class ReaderAppBar extends ConsumerWidget implements PreferredSizeWidget {
                   icon: const Icon(Icons.search),
                   color: AppColors.textSecondary,
                   onPressed: () {
-                    // TODO: Implement search functionality
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Search not implemented yet.')),
                     );

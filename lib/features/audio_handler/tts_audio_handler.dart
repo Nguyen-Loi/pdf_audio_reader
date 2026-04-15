@@ -218,10 +218,6 @@ class TtsAudioHandler extends BaseAudioHandler {
   }
 
   Future<void> _applyConfig(TtsConfig config) async {
-    List<dynamic> availableLanguages = await getAvailableVoices();
-    AppLogger.i('Available languages: $availableLanguages');
-    List<dynamic> availableVoices = await getAvailableLanguages();
-    AppLogger.i('Available voices: $availableVoices');
     await _tts.setLanguage(config.language);
     await _tts.setSpeechRate(config.speed);
     await _tts.setVolume(config.volume);
