@@ -55,9 +55,6 @@ class SessionSettingsModal extends ConsumerWidget {
                         .setSpeed(globalConfig.speed);
                     ref
                         .read(ttsConfigProvider.notifier)
-                        .setLanguage(globalConfig.language);
-                    ref
-                        .read(ttsConfigProvider.notifier)
                         .setVoice(globalConfig.voice);
                     ref
                         .read(ttsConfigProvider.notifier)
@@ -93,29 +90,6 @@ class SessionSettingsModal extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: AppDimensions.md),
-            const Text('Language', style: AppTextStyles.labelSmall),
-            Container(
-              margin: const EdgeInsets.only(top: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: AppColors.bgSurface,
-                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  isExpanded: true,
-                  value: sessionConfig.language,
-                  dropdownColor: AppColors.bgCard,
-                  items: _buildLanguageItems(sessionConfig.language),
-                  onChanged: (val) {
-                    if (val != null) {
-                      ref.read(ttsConfigProvider.notifier).setLanguage(val);
-                    }
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(height: AppDimensions.md),
             const Text('Voice', style: AppTextStyles.labelSmall),
             Container(
               margin: const EdgeInsets.only(top: 8),
@@ -130,7 +104,7 @@ class SessionSettingsModal extends ConsumerWidget {
                 ),
                 subtitle: Text(
                   sessionConfig.voice?['locale']?.toString() ??
-                      sessionConfig.language,
+                      'Auto (detected by content)',
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -168,7 +142,8 @@ class SessionSettingsModal extends ConsumerWidget {
                     ),
                     DropdownMenuItem(
                       value: Axis.horizontal,
-                      child: Text('Horizontal', style: AppTextStyles.bodyMedium),
+                      child:
+                          Text('Horizontal', style: AppTextStyles.bodyMedium),
                     ),
                   ],
                   onChanged: (val) {
@@ -186,25 +161,5 @@ class SessionSettingsModal extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  List<DropdownMenuItem<String>> _buildLanguageItems(String current) {
-    final items = <String, String>{
-      'en-US': 'English',
-      'vi-VN': 'Vietnamese',
-    };
-
-    if (!items.containsKey(current)) {
-      items[current] = current;
-    }
-
-    return items.entries
-        .map(
-          (entry) => DropdownMenuItem(
-            value: entry.key,
-            child: Text(entry.value, style: AppTextStyles.bodyMedium),
-          ),
-        )
-        .toList();
   }
 }

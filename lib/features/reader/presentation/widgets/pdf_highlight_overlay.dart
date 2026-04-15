@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf_audio_reader/features/reader/domain/entities/highlight_state.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/highlight_provider.dart';
+import 'package:pdf_audio_reader/features/reader/presentation/providers/ui_state_provider.dart';
 
 class PdfHighlightOverlay extends ConsumerStatefulWidget {
   final String filePath;
@@ -73,19 +74,46 @@ class _PdfHighlightOverlayState extends ConsumerState<PdfHighlightOverlay> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        return SfPdfViewer.memory(
-          snapshot.data!,
-          controller: _pdfViewerController,
-          pageLayoutMode: PdfPageLayoutMode.continuous,
-          scrollDirection: scrollDirection,
-          canShowScrollHead: false,
-          canShowScrollStatus: false,
-          enableTextSelection: true,
-          onDocumentLoaded: (details) {
-            if (widget.currentPageIndex > 0) {
-              _pdfViewerController.jumpToPage(widget.currentPageIndex + 1);
-            }
-          },
+        return Stack(
+          children: [
+            SfPdfViewer.memory(
+              snapshot.data!,
+              controller: _pdfViewerController,
+              pageLayoutMode: PdfPageLayoutMode.continuous,
+              scrollDirection: scrollDirection,
+              canShowScrollHead: false,
+              canShowScrollStatus: false,
+              enableTextSelection: true,
+              onDocumentLoaded: (details) {
+                if (widget.currentPageIndex > 0) {
+                  _pdfViewerController.jumpToPage(widget.currentPageIndex + 1);
+                }
+              },
+            ),
+            // Transparent tap overlay to detect taps
+            Positioned.fill(
+              child: Consumer(
+                builder: (context, ref, _) {
+                  return GestureDetector(
+                    onTap: () {
+                      final uiNotifier = ref.read(
+                        readerUiStateProvider.notifier,
+                      );
+                      final uiState = ref.read(readerUiStateProvider);
+
+                      if (uiState == ReaderUiState.audioMode) {
+                        uiNotifier.toggleAudioMode();
+                      } else {
+                        uiNotifier.toggleHud();
+                      }
+                    },
+                    behavior: HitTestBehavior.translucent,
+                    child: const SizedBox.expand(),
+                  );
+                },
+              ),
+            ),
+          ],
         );
       },
     );

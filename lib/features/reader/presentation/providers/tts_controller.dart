@@ -19,8 +19,8 @@ class TtsController {
     required String detectedLocale,
     required TtsConfig baseConfig,
   }) async {
-    final voiceLocale = _extractVoiceLocale(baseConfig.voice);
-    final resolvedLocale = voiceLocale ?? detectedLocale;
+    final resolvedLocale =
+        detectedLocale.isNotEmpty ? detectedLocale : baseConfig.language;
 
     final resolvedVoice = _resolveVoiceForLocale(
       resolvedLocale,
@@ -28,18 +28,11 @@ class TtsController {
     );
 
     final updated = baseConfig.copyWith(
-      language: resolvedLocale,
       voice: resolvedVoice,
     );
 
     await handler.applyConfig(updated);
     return updated;
-  }
-
-  String? _extractVoiceLocale(Map<String, dynamic>? voice) {
-    final locale = voice?['locale']?.toString();
-    if (locale == null || locale.isEmpty) return null;
-    return locale;
   }
 
   Map<String, dynamic>? _resolveVoiceForLocale(

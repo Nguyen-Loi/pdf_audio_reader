@@ -119,9 +119,10 @@ class _AudioHub extends ConsumerWidget {
     final isPlaying = state.isPlaying;
 
     return Padding(
-      padding: const EdgeInsets.all(AppDimensions.lg),
+      padding: const EdgeInsets.all(AppDimensions.md),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        spacing: 4,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -145,8 +146,8 @@ class _AudioHub extends ConsumerWidget {
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  width: 72,
-                  height: 72,
+                  width: 56,
+                  height: 56,
                   decoration: BoxDecoration(
                     gradient: AppColors.primaryGradient,
                     shape: BoxShape.circle,
@@ -178,9 +179,9 @@ class _AudioHub extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: AppDimensions.xl),
+          const Divider(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               TextButton.icon(
                 onPressed: () {
@@ -192,7 +193,13 @@ class _AudioHub extends ConsumerWidget {
                 label: const Text('Cancel',
                     style: TextStyle(color: AppColors.textSecondary)),
               ),
-              const SizedBox(width: AppDimensions.xxxl),
+              const SizedBox(
+                height: 16,
+                child: VerticalDivider(
+                  width: 12,
+                  thickness: 1,
+                ),
+              ),
               TextButton.icon(
                 onPressed: () {
                   showModalBottomSheet(

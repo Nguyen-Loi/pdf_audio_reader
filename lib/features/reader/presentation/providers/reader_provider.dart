@@ -256,13 +256,12 @@ class ReaderNotifier extends StateNotifier<ReaderState> {
           pageIndex: pageIndex,
           pageText: pageText,
           elements: content.pageElements(pageIndex),
-          renderMode: effectiveConfig.readerMode,
+          renderMode: state.renderMode,
         );
 
     state = state.copyWith(
       position: ReadingPosition(pageIndex: pageIndex, charOffset: safeOffset),
       isPlaying: true,
-      renderMode: effectiveConfig.readerMode,
     );
   }
 
@@ -344,7 +343,6 @@ class ReaderNotifier extends StateNotifier<ReaderState> {
     _ref
         .read(ttsConfigProvider.notifier)
         .setReaderMode(effectiveConfig.readerMode);
-    _ref.read(ttsConfigProvider.notifier).setLanguage(effectiveConfig.language);
     _ref.read(ttsConfigProvider.notifier).setVoice(effectiveConfig.voice);
   }
 
