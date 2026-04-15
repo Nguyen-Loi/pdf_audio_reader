@@ -185,9 +185,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get systemVoice => 'System Voice';
 
   @override
-  String get searchNotImplementedYet => 'Search not implemented yet.';
-
-  @override
   String get cancel => 'Cancel';
 
   @override

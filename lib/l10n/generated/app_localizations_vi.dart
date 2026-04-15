@@ -184,9 +184,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get systemVoice => 'Giọng hệ thống';
 
   @override
-  String get searchNotImplementedYet => 'Tìm kiếm chưa được hỗ trợ.';
-
-  @override
   String get cancel => 'Hủy';
 
   @override
