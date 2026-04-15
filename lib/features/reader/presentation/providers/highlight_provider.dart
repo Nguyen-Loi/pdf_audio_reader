@@ -2,9 +2,10 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf_audio_reader/features/audio_handler/audio_handler_provider.dart';
-import 'package:pdf_audio_reader/features/pdf_parser/domain/entities/parsed_page.dart';
 import 'package:pdf_audio_reader/features/reader/data/models/tts_progress_model.dart';
+import 'package:pdf_audio_reader/features/reader/domain/entities/reader_content.dart';
 import 'package:pdf_audio_reader/features/reader/domain/entities/highlight_state.dart';
+import 'package:pdf_audio_reader/features/reader/domain/entities/tts_config.dart';
 
 /// Listens to [TtsAudioHandler.customEvent] and publishes [HighlightState].
 class HighlightNotifier extends StateNotifier<HighlightState> {
@@ -14,37 +15,58 @@ class HighlightNotifier extends StateNotifier<HighlightState> {
       if (event is TtsProgressModel) {
         _updateHighlight(event);
       } else if (event is Map && event['type'] == 'stop') {
-        state = HighlightState.empty;
+        state = HighlightState.empty.copyWith(
+          pageIndex: _pageIndex,
+          renderMode: state.renderMode,
+        );
       }
     });
   }
 
   StreamSubscription<dynamic>? _sub;
-  ParsedPage? _activePage;
+  String _pageText = '';
+  List<TextElement> _elements = const [];
+  int _pageIndex = 0;
 
-  void setParsedPage(ParsedPage page) {
-    _activePage = page;
-    state = HighlightState.empty;
+  void setPageData({
+    required int pageIndex,
+    required String pageText,
+    required List<TextElement> elements,
+    required ReaderMode renderMode,
+  }) {
+    _pageIndex = pageIndex;
+    _pageText = pageText;
+    _elements = elements;
+    state = HighlightState.empty.copyWith(
+      pageIndex: pageIndex,
+      renderMode: renderMode,
+    );
   }
 
   void _updateHighlight(TtsProgressModel progress) {
-    if (_activePage == null) return;
-    
-    final sentenceBounds = _findSentenceBounds(progress.start);
+    if (_pageText.isEmpty) return;
+    if (progress.pageIndex != _pageIndex) return;
+
+    final sentenceBounds = _findSentenceBounds(progress.startOffset);
 
     // Calculate bounding box using a binary search or iteration
     Rect? currentBounds;
-    for (final coord in _activePage!.wordCoordinates) {
-      if (progress.start >= coord.charStart && progress.start <= coord.charEnd) {
-        currentBounds = coord.bounds;
-        break;
+    if (progress.renderMode == ReaderMode.originalPdf && _elements.isNotEmpty) {
+      for (final element in _elements) {
+        if (progress.startOffset >= element.charStart &&
+            progress.startOffset <= element.charEnd) {
+          currentBounds = element.bounds;
+          break;
+        }
       }
     }
 
     state = HighlightState(
-      wordStart: progress.start,
-      wordEnd: progress.end,
+      pageIndex: progress.pageIndex,
+      wordStart: progress.startOffset,
+      wordEnd: progress.endOffset,
       currentWord: progress.word,
+      renderMode: progress.renderMode,
       sentenceStart: sentenceBounds.$1,
       sentenceEnd: sentenceBounds.$2,
       currentBounds: currentBounds,
@@ -54,8 +76,8 @@ class HighlightNotifier extends StateNotifier<HighlightState> {
   /// Finds start/end of the sentence containing [wordStart] by scanning for
   /// sentence-terminating punctuation (. ! ?) in the current page text.
   (int, int) _findSentenceBounds(int wordStart) {
-    if (_activePage == null || _activePage!.text.isEmpty) return (0, 0);
-    final String pageText = _activePage!.text;
+    if (_pageText.isEmpty) return (0, 0);
+    final String pageText = _pageText;
 
     // Find sentence start — scan backwards for sentence-ending punctuation
     var sentStart = 0;

@@ -141,16 +141,7 @@ class SettingsPage extends ConsumerWidget {
               value: config.language,
               dropdownColor: AppColors.bgCard,
               underline: const SizedBox(),
-              items: const [
-                DropdownMenuItem(
-                  value: 'en-US',
-                  child: Text('English', style: AppTextStyles.bodyMedium),
-                ),
-                DropdownMenuItem(
-                  value: 'vi-VN',
-                  child: Text('Vietnamese', style: AppTextStyles.bodyMedium),
-                ),
-              ],
+              items: _buildLanguageItems(config.language),
               onChanged: (val) {
                 if (val != null) {
                   ref.read(globalTtsConfigProvider.notifier).setLanguage(val);
@@ -234,4 +225,24 @@ class _SettingsTile extends StatelessWidget {
       ),
     );
   }
+}
+
+List<DropdownMenuItem<String>> _buildLanguageItems(String current) {
+  final items = <String, String>{
+    'en-US': 'English',
+    'vi-VN': 'Vietnamese',
+  };
+
+  if (!items.containsKey(current)) {
+    items[current] = current;
+  }
+
+  return items.entries
+      .map(
+        (entry) => DropdownMenuItem(
+          value: entry.key,
+          child: Text(entry.value, style: AppTextStyles.bodyMedium),
+        ),
+      )
+      .toList();
 }

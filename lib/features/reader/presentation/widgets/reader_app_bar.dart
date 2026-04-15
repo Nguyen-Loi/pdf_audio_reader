@@ -40,7 +40,8 @@ class ReaderAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 Expanded(
                   child: Consumer(
                     builder: (context, ref, child) {
-                      final title = ref.watch(readerProvider.select((s) => s.document?.title));
+                        final title =
+                          ref.watch(readerProvider.select((s) => s.title));
                       return Text(
                         title ?? 'Reader',
                         style: AppTextStyles.h3,

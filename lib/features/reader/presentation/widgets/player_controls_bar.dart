@@ -59,9 +59,9 @@ class _StandardBottomBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(readerProvider);
-    final title = state.document?.title ?? 'Unknown Document';
+    final title = state.title ?? 'Unknown Document';
     final pageIndex = state.position.pageIndex;
-    final pageCount = state.document?.pageCount ?? 0;
+    final pageCount = state.pageCount;
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -168,9 +168,9 @@ class _AudioHub extends ConsumerWidget {
               const SizedBox(width: AppDimensions.xl),
               _ControlButton(
                 icon: Icons.skip_next_rounded,
-                onPressed: (state.document?.pageCount ?? 0) > 0 &&
+                onPressed: state.pageCount > 0 &&
                         state.position.pageIndex <
-                            (state.document?.pageCount ?? 1) - 1
+                            (state.pageCount > 0 ? state.pageCount : 1) - 1
                     ? () => ref
                         .read(readerProvider.notifier)
                         .skipToPage(state.position.pageIndex + 1)

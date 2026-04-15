@@ -44,8 +44,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RouteNames.reader,
         builder: (context, state) {
-          final pdfId = state.extra as String? ?? '';
-          return ReaderPage(pdfId: pdfId);
+          final extra = state.extra as ReaderPageParams;
+
+          return ReaderPage(params: extra);
         },
       ),
       GoRoute(

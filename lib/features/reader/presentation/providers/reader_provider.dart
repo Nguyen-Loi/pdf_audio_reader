@@ -1,46 +1,67 @@
 import 'dart:async';
 
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf_audio_reader/features/audio_handler/audio_handler_provider.dart';
 import 'package:pdf_audio_reader/features/pdf_library/presentation/providers/pdf_library_provider.dart';
-import 'package:pdf_audio_reader/features/pdf_parser/domain/entities/parsed_document.dart';
 import 'package:pdf_audio_reader/features/pdf_parser/presentation/providers/pdf_parser_provider.dart';
+import 'package:pdf_audio_reader/features/reader/domain/entities/reader_content.dart';
 import 'package:pdf_audio_reader/features/reader/domain/entities/reading_position.dart';
 import 'package:pdf_audio_reader/features/reader/domain/entities/tts_config.dart';
+import 'package:pdf_audio_reader/features/reader/presentation/providers/language_detection_provider.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/highlight_provider.dart';
+import 'package:pdf_audio_reader/features/reader/presentation/providers/tts_controller.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/tts_config_provider.dart';
 
 // ── Reader state ───────────────────────────────────────────────────────────
 
 class ReaderState {
-  final ParsedDocument? document;
+  final ReaderContent? content;
+  final String? contentId;
+  final String? title;
+  final String detectedLocale;
   final ReadingPosition position;
+  final ReaderMode renderMode;
   final bool isPlaying;
   final bool isLoading;
   final String? error;
 
   const ReaderState({
-    this.document,
+    this.content,
+    this.contentId,
+    this.title,
+    this.detectedLocale = 'en-US',
     this.position = ReadingPosition.start,
+    this.renderMode = ReaderMode.textOnly,
     this.isPlaying = false,
     this.isLoading = false,
     this.error,
   });
 
   ReaderState copyWith({
-    ParsedDocument? document,
+    ReaderContent? content,
+    String? contentId,
+    String? title,
+    String? detectedLocale,
     ReadingPosition? position,
+    ReaderMode? renderMode,
     bool? isPlaying,
     bool? isLoading,
     String? error,
   }) =>
       ReaderState(
-        document: document ?? this.document,
+        content: content ?? this.content,
+        contentId: contentId ?? this.contentId,
+        title: title ?? this.title,
+        detectedLocale: detectedLocale ?? this.detectedLocale,
         position: position ?? this.position,
+        renderMode: renderMode ?? this.renderMode,
         isPlaying: isPlaying ?? this.isPlaying,
         isLoading: isLoading ?? this.isLoading,
         error: error,
       );
+
+  int get pageCount => content?.pageCount ?? 0;
 }
 
 // ── Reader notifier ────────────────────────────────────────────────────────
@@ -51,9 +72,16 @@ class ReaderNotifier extends StateNotifier<ReaderState> {
 
   ReaderNotifier(this._ref) : super(const ReaderState());
 
-  Future<void> openPdf({required String pdfId}) async {
+  Future<void> openPdf({
+    required String pdfId,
+    ReaderMode? initialReaderMode,
+  }) async {
     state = state.copyWith(isLoading: true, error: null);
     final handler = _ref.read(audioHandlerProvider);
+    final ttsConfig = _ref.read(ttsConfigProvider);
+    final baseConfig = initialReaderMode == null
+        ? ttsConfig
+        : ttsConfig.copyWith(readerMode: initialReaderMode);
 
     try {
       // Get PDF info from library
@@ -80,32 +108,50 @@ class ReaderNotifier extends StateNotifier<ReaderState> {
       final startPage = docInfo.lastPageIndex ?? 0;
       final startOffset = docInfo.lastCharOffset ?? 0;
 
+      final content = ReaderContent.fromParsedDocument(parseResult);
+      final detectedLocale = await _detectContentLocale(content);
+      final effectiveConfig =
+          await _ref.read(ttsControllerProvider).applyForLocale(
+                detectedLocale: detectedLocale,
+                baseConfig: baseConfig,
+              );
+      _syncSessionConfig(effectiveConfig);
+
       // Load into audio handler
-      await handler.loadDocument(
-        pages: parseResult.pages.map((p) => p.text).toList(),
+      await handler.loadContent(
+        pages: content.toPageTexts(),
         title: parseResult.title,
-        pdfId: pdfId,
+        contentId: pdfId,
         startPage: startPage,
         startOffset: startOffset,
       );
 
       // Wire highlight provider to current page
-      _ref.read(highlightProvider.notifier).setParsedPage(parseResult.pages[startPage]);
+      _ref.read(highlightProvider.notifier).setPageData(
+            pageIndex: startPage,
+            pageText: content.pageText(startPage),
+            elements: content.pageElements(startPage),
+            renderMode: effectiveConfig.readerMode,
+          );
 
       // Listen for page-complete events
       _eventSub?.cancel();
       _eventSub = handler.customEvent.listen((event) {
         if (event is Map && event['type'] == 'pageComplete') {
-          _onPageComplete(event['pageIndex'] as int, parseResult);
+          _onPageComplete(event['pageIndex'] as int);
         }
       });
 
       state = state.copyWith(
-        document: parseResult,
+        content: content,
+        contentId: pdfId,
+        title: parseResult.title,
+        detectedLocale: detectedLocale,
         position: ReadingPosition(
           pageIndex: startPage,
           charOffset: startOffset,
         ),
+        renderMode: effectiveConfig.readerMode,
         isLoading: false,
       );
     } catch (e) {
@@ -113,17 +159,111 @@ class ReaderNotifier extends StateNotifier<ReaderState> {
     }
   }
 
-  void _onPageComplete(int completedPage, ParsedDocument doc) {
+  Future<void> openPlainText({
+    required String contentId,
+    required String title,
+    required String text,
+    int startOffset = 0,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+    final handler = _ref.read(audioHandlerProvider);
+    final ttsConfig = _ref.read(ttsConfigProvider);
+
+    final content = ReaderContent.plainText(text);
+    final detectedLocale = await _detectContentLocale(content);
+    final effectiveConfig =
+        await _ref.read(ttsControllerProvider).applyForLocale(
+              detectedLocale: detectedLocale,
+              baseConfig: ttsConfig,
+            );
+    _syncSessionConfig(effectiveConfig);
+
+    await handler.loadContent(
+      pages: content.toPageTexts(),
+      title: title,
+      contentId: contentId,
+      startPage: 0,
+      startOffset: startOffset,
+    );
+
+    _ref.read(highlightProvider.notifier).setPageData(
+          pageIndex: 0,
+          pageText: content.pageText(0),
+          elements: const [],
+          renderMode: effectiveConfig.readerMode,
+        );
+
+    state = state.copyWith(
+      content: content,
+      contentId: contentId,
+      title: title,
+      detectedLocale: detectedLocale,
+      position: ReadingPosition(pageIndex: 0, charOffset: startOffset),
+      renderMode: effectiveConfig.readerMode,
+      isLoading: false,
+    );
+  }
+
+  void _onPageComplete(int completedPage) {
+    final content = state.content;
+    if (content == null) return;
     final nextPage = completedPage + 1;
-    if (nextPage < doc.pages.length) {
+    if (nextPage < content.pageCount) {
       skipToPage(nextPage);
-      _ref.read(audioHandlerProvider).play();
+      playAt(nextPage, 0);
     }
   }
 
   Future<void> play() async {
-    await _ref.read(audioHandlerProvider).play();
-    state = state.copyWith(isPlaying: true);
+    final position = state.position;
+    await playAt(position.pageIndex, position.charOffset);
+  }
+
+  Future<void> playAt(int pageIndex, int charOffset) async {
+    final content = state.content;
+    if (content == null) return;
+    if (pageIndex < 0 || pageIndex >= content.pageCount) return;
+
+    final pageText = content.pageText(pageIndex);
+    if (pageText.trim().isEmpty) return;
+
+    final maxOffset = pageText.length > 0 ? pageText.length - 1 : 0;
+    final safeOffset = charOffset.clamp(0, maxOffset);
+
+    final handler = _ref.read(audioHandlerProvider);
+    final baseConfig = _ref.read(ttsConfigProvider);
+
+    final effectiveConfig = await _ref
+        .read(ttsControllerProvider)
+        .applyForLocale(
+            detectedLocale: state.detectedLocale, baseConfig: baseConfig);
+
+    await handler.playMediaItem(_buildMediaItem(
+      contentId: state.contentId ?? 'reader_content',
+      title: state.title ?? 'Document',
+      pageIndex: pageIndex,
+      charOffset: safeOffset,
+      renderMode: effectiveConfig.readerMode,
+    ));
+
+    await handler.playSegment(
+      pageIndex: pageIndex,
+      charOffset: safeOffset,
+      renderMode: effectiveConfig.readerMode,
+    );
+
+    _ref.read(highlightProvider.notifier).setPageData(
+          pageIndex: pageIndex,
+          pageText: pageText,
+          elements: content.pageElements(pageIndex),
+          renderMode: effectiveConfig.readerMode,
+        );
+
+    state = state.copyWith(
+      position: ReadingPosition(pageIndex: pageIndex, charOffset: safeOffset),
+      isPlaying: true,
+      renderMode: effectiveConfig.readerMode,
+    );
   }
 
   Future<void> pause() async {
@@ -137,31 +277,95 @@ class ReaderNotifier extends StateNotifier<ReaderState> {
   }
 
   Future<void> skipToPage(int pageIndex) async {
-    final doc = state.document;
-    if (doc == null || pageIndex < 0 || pageIndex >= doc.pageCount) return;
+    final content = state.content;
+    if (content == null || pageIndex < 0 || pageIndex >= content.pageCount) {
+      return;
+    }
     await _ref.read(audioHandlerProvider).skipToPage(pageIndex);
-    _ref.read(highlightProvider.notifier)
-        .setParsedPage(doc.pages[pageIndex]);
+    _ref.read(highlightProvider.notifier).setPageData(
+          pageIndex: pageIndex,
+          pageText: content.pageText(pageIndex),
+          elements: content.pageElements(pageIndex),
+          renderMode: state.renderMode,
+        );
     state = state.copyWith(
       position: ReadingPosition(pageIndex: pageIndex, charOffset: 0),
     );
   }
 
   Future<void> applyConfig(TtsConfig config) async {
-    await _ref.read(audioHandlerProvider).applyConfig(config);
-    _ref.read(ttsConfigProvider.notifier).setSpeed(config.speed);
+    final effectiveConfig = await _ref
+        .read(ttsControllerProvider)
+        .applyForLocale(
+            detectedLocale: state.detectedLocale, baseConfig: config);
+    _syncSessionConfig(effectiveConfig);
   }
 
   /// Persists current position to Firestore.
   Future<void> saveProgress() async {
-    final doc = state.document;
-    if (doc == null) return;
+    final contentId = state.contentId;
+    if (contentId == null) return;
     final handler = _ref.read(audioHandlerProvider);
     final ds = _ref.read(pdfDatasourceProvider);
     await ds.saveReadingProgress(
-      id: doc.pdfId,
+      id: contentId,
       pageIndex: handler.currentPageIndex,
-      charOffset: 0, // offset tracked by handler
+      charOffset: handler.currentCharOffset,
+    );
+  }
+
+  Future<String> _detectContentLocale(ReaderContent content) async {
+    final detector = _ref.read(languageDetectionServiceProvider);
+    final sample = _buildDocumentSample(content);
+    return detector.detectLocale(sample, fallbackLocale: 'en-US');
+  }
+
+  String _buildDocumentSample(ReaderContent content) {
+    if (!content.isPdf) {
+      return _trimSample(content.rawText);
+    }
+
+    for (final pageText in content.toPageTexts()) {
+      if (pageText.trim().isNotEmpty) {
+        return _trimSample(pageText);
+      }
+    }
+
+    return '';
+  }
+
+  String _trimSample(String text) {
+    if (text.isEmpty) return '';
+    final end = text.length > 500 ? 500 : text.length;
+    return text.substring(0, end);
+  }
+
+  void _syncSessionConfig(TtsConfig effectiveConfig) {
+    _ref
+        .read(ttsConfigProvider.notifier)
+        .setReaderMode(effectiveConfig.readerMode);
+    _ref.read(ttsConfigProvider.notifier).setLanguage(effectiveConfig.language);
+    _ref.read(ttsConfigProvider.notifier).setVoice(effectiveConfig.voice);
+  }
+
+  MediaItem _buildMediaItem({
+    required String contentId,
+    required String title,
+    required int pageIndex,
+    required int charOffset,
+    required ReaderMode renderMode,
+  }) {
+    return MediaItem(
+      id: '${contentId}_page_$pageIndex',
+      title: title,
+      album: 'Page ${pageIndex + 1} of ${state.pageCount}',
+      artist: 'PDF Readcloud',
+      extras: {
+        'pageIndex': pageIndex,
+        'contentId': contentId,
+        'charOffset': charOffset,
+        'renderMode': renderMode.name,
+      },
     );
   }
 
@@ -172,7 +376,6 @@ class ReaderNotifier extends StateNotifier<ReaderState> {
   }
 }
 
-final readerProvider =
-    StateNotifierProvider<ReaderNotifier, ReaderState>(
+final readerProvider = StateNotifierProvider<ReaderNotifier, ReaderState>(
   (ref) => ReaderNotifier(ref),
 );

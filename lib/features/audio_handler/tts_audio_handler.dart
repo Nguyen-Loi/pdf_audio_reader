@@ -21,6 +21,9 @@ class TtsAudioHandler extends BaseAudioHandler {
   int _currentPageIndex = 0;
   bool _isPaused = false;
   bool _isPlaying = false;
+  String _contentId = '';
+  String _title = '';
+  ReaderMode _renderMode = ReaderMode.textOnly;
 
   /// Cumulative offset from original page text start (Android resume fix).
   int _globalOffset = 0;
@@ -59,9 +62,11 @@ class TtsAudioHandler extends BaseAudioHandler {
       _pauseCharOffset = adjustedStart;
 
       customEvent.add(TtsProgressModel(
-        start: adjustedStart,
-        end: adjustedEnd,
+        startOffset: adjustedStart,
+        endOffset: adjustedEnd,
         word: word,
+        pageIndex: _currentPageIndex,
+        renderMode: _renderMode,
       ));
     });
 
@@ -69,7 +74,11 @@ class TtsAudioHandler extends BaseAudioHandler {
     _tts.setCompletionHandler(() {
       _isPlaying = false;
       _isPaused = false;
-      customEvent.add({'type': 'pageComplete', 'pageIndex': _currentPageIndex});
+      customEvent.add({
+        'type': 'pageComplete',
+        'pageIndex': _currentPageIndex,
+        'renderMode': _renderMode.name,
+      });
       _broadcastStopped();
     });
 
@@ -93,7 +102,33 @@ class TtsAudioHandler extends BaseAudioHandler {
 
   // ── Public API — called by reader_provider ─────────────────────────────
 
-  /// Load pages from a [ParsedDocument] and optionally start from a position.
+  /// Load pages from a document (PDF or plaintext) and optionally start from a
+  /// position.
+  Future<void> loadContent({
+    required List<String> pages,
+    required String title,
+    required String contentId,
+    int startPage = 0,
+    int startOffset = 0,
+  }) async {
+    _pages = pages;
+    _title = title;
+    _contentId = contentId;
+    _currentPageIndex = startPage;
+    _pauseCharOffset = startOffset;
+    _globalOffset = startOffset;
+
+    queue.add(_buildQueue(contentId, title));
+    mediaItem.add(_buildMediaItem(
+      contentId: contentId,
+      title: title,
+      pageIndex: startPage,
+      charOffset: startOffset,
+      renderMode: _renderMode,
+    ));
+  }
+
+  /// Backwards-compatible wrapper for legacy callers.
   Future<void> loadDocument({
     required List<String> pages,
     required String title,
@@ -101,13 +136,13 @@ class TtsAudioHandler extends BaseAudioHandler {
     int startPage = 0,
     int startOffset = 0,
   }) async {
-    _pages = pages;
-    _currentPageIndex = startPage;
-    _pauseCharOffset = startOffset;
-    _globalOffset = startOffset;
-
-    queue.add(_buildQueue(pdfId, title));
-    mediaItem.add(_buildMediaItem(pdfId, title, startPage));
+    await loadContent(
+      pages: pages,
+      title: title,
+      contentId: pdfId,
+      startPage: startPage,
+      startOffset: startOffset,
+    );
   }
 
   Future<void> applyConfig(TtsConfig config) async {
@@ -122,6 +157,7 @@ class TtsAudioHandler extends BaseAudioHandler {
     if (_pages.isEmpty) return;
 
     final pageText = _pages[_currentPageIndex];
+    if (pageText.isEmpty) return;
 
     if (_isPaused && Platform.isAndroid) {
       // Android: resume by speaking remaining substring
@@ -131,9 +167,12 @@ class TtsAudioHandler extends BaseAudioHandler {
           : pageText;
       await _tts.speak(remaining);
     } else if (!_isPlaying) {
-      // Fresh start / new page
-      _globalOffset = 0;
-      await _tts.speak(pageText);
+      // Fresh start / new page (respect start offset if set)
+      final startOffset = _globalOffset;
+      final remaining = startOffset > 0 && pageText.length > startOffset
+          ? pageText.substring(startOffset)
+          : pageText;
+      await _tts.speak(remaining);
     } else {
       // iOS: native continue — continueHandler is a VoidCallback
       _tts.continueHandler?.call();
@@ -164,7 +203,7 @@ class TtsAudioHandler extends BaseAudioHandler {
     _isPaused = false;
     _globalOffset = 0;
     _pauseCharOffset = 0;
-    customEvent.add({'type': 'stop'});
+    customEvent.add({'type': 'stop', 'renderMode': _renderMode.name});
     _broadcastStopped();
   }
 
@@ -175,7 +214,13 @@ class TtsAudioHandler extends BaseAudioHandler {
       _currentPageIndex++;
       _resetOffsets();
       mediaItem.add(
-        _buildMediaItem('', mediaItem.value?.album ?? '', _currentPageIndex),
+        _buildMediaItem(
+          contentId: _contentId,
+          title: _title,
+          pageIndex: _currentPageIndex,
+          charOffset: 0,
+          renderMode: _renderMode,
+        ),
       );
       if (_isPlaying || !_isPaused) {
         _globalOffset = 0;
@@ -191,7 +236,13 @@ class TtsAudioHandler extends BaseAudioHandler {
       _currentPageIndex--;
       _resetOffsets();
       mediaItem.add(
-        _buildMediaItem('', mediaItem.value?.album ?? '', _currentPageIndex),
+        _buildMediaItem(
+          contentId: _contentId,
+          title: _title,
+          pageIndex: _currentPageIndex,
+          charOffset: 0,
+          renderMode: _renderMode,
+        ),
       );
       if (_isPlaying || !_isPaused) {
         _globalOffset = 0;
@@ -206,6 +257,61 @@ class TtsAudioHandler extends BaseAudioHandler {
     await _tts.stop();
     _currentPageIndex = pageIndex;
     _resetOffsets();
+  }
+
+  @override
+  Future<void> playMediaItem(MediaItem item) async {
+    mediaItem.add(item);
+    final extras = item.extras ?? {};
+
+    _title = item.title;
+    final contentId = extras['contentId'];
+    if (contentId is String) {
+      _contentId = contentId;
+    }
+
+    final pageIndex = extras['pageIndex'];
+    if (pageIndex is int) {
+      _currentPageIndex = pageIndex;
+    }
+
+    final charOffset = extras['charOffset'];
+    if (charOffset is int) {
+      _globalOffset = charOffset;
+      _pauseCharOffset = charOffset;
+    }
+
+    final renderMode = extras['renderMode'];
+    if (renderMode is String) {
+      _renderMode = ReaderMode.values.firstWhere(
+        (mode) => mode.name == renderMode,
+        orElse: () => ReaderMode.textOnly,
+      );
+    }
+  }
+
+  Future<void> playSegment({
+    required int pageIndex,
+    required int charOffset,
+    required ReaderMode renderMode,
+  }) async {
+    if (_pages.isEmpty) return;
+    if (pageIndex < 0 || pageIndex >= _pages.length) return;
+
+    _currentPageIndex = pageIndex;
+    _renderMode = renderMode;
+    _globalOffset = charOffset;
+    _pauseCharOffset = charOffset;
+    _isPaused = false;
+    _isPlaying = false;
+
+    final pageText = _pages[_currentPageIndex];
+    if (pageText.isEmpty) return;
+
+    final maxOffset = pageText.length > 0 ? pageText.length - 1 : 0;
+    final safeOffset = charOffset.clamp(0, maxOffset);
+
+    await _tts.speak(pageText.substring(safeOffset));
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────
@@ -262,30 +368,42 @@ class TtsAudioHandler extends BaseAudioHandler {
     ));
   }
 
-  List<MediaItem> _buildQueue(String pdfId, String title) =>
+  List<MediaItem> _buildQueue(String contentId, String title) =>
       _pages.asMap().entries.map((e) {
         return MediaItem(
-          id: '${pdfId}_page_${e.key}',
+          id: '${contentId}_page_${e.key}',
           title: title,
           album: 'Page ${e.key + 1} of ${_pages.length}',
           artist: 'PDF Readcloud',
-          extras: {'pageIndex': e.key, 'pdfId': pdfId},
+          extras: {'pageIndex': e.key, 'contentId': contentId},
         );
       }).toList();
 
-  MediaItem _buildMediaItem(String pdfId, String title, int pageIndex) =>
+  MediaItem _buildMediaItem({
+    required String contentId,
+    required String title,
+    required int pageIndex,
+    required int charOffset,
+    required ReaderMode renderMode,
+  }) =>
       MediaItem(
-        id: '${pdfId}_page_$pageIndex',
+        id: '${contentId}_page_$pageIndex',
         title: title,
         album: 'Page ${pageIndex + 1} of ${_pages.length}',
         artist: 'PDF Readcloud',
-        extras: {'pageIndex': pageIndex, 'pdfId': pdfId},
+        extras: {
+          'pageIndex': pageIndex,
+          'contentId': contentId,
+          'charOffset': charOffset,
+          'renderMode': renderMode.name,
+        },
       );
 
   // Getters for provider
   int get currentPageIndex => _currentPageIndex;
   bool get isPlaying => _isPlaying;
   bool get isPaused => _isPaused;
+  int get currentCharOffset => _pauseCharOffset;
 
   Future<List<dynamic>> getAvailableVoices() async =>
       await _tts.getVoices as List;

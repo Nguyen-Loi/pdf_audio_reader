@@ -7,6 +7,7 @@ import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
 import 'package:pdf_audio_reader/core/widgets/app_error_widget.dart';
 import 'package:pdf_audio_reader/core/widgets/app_loading.dart';
 import 'package:pdf_audio_reader/core/widgets/gradient_scaffold.dart';
+import 'package:pdf_audio_reader/features/pdf_library/presentation/pages/library_page.dart';
 import 'package:pdf_audio_reader/features/pdf_library/presentation/providers/pdf_library_provider.dart';
 import 'package:pdf_audio_reader/features/reader/domain/entities/tts_config.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/reader_provider.dart';
@@ -19,8 +20,11 @@ import 'package:pdf_audio_reader/features/reader/presentation/widgets/reader_app
 import 'package:pdf_audio_reader/features/subscription/presentation/providers/subscription_provider.dart';
 
 class ReaderPage extends ConsumerStatefulWidget {
-  final String pdfId;
-  const ReaderPage({super.key, required this.pdfId});
+  final ReaderPageParams params;
+  const ReaderPage({
+    super.key,
+    required this.params,
+  });
 
   @override
   ConsumerState<ReaderPage> createState() => _ReaderPageState();
@@ -32,11 +36,14 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
   late final ReaderNotifier _readerNotifier;
   int? _pendingPageIndex;
   ProviderSubscription<ReaderState>? _readerSub;
+  late String _pdfId;
 
   @override
   void initState() {
     super.initState();
     _readerNotifier = ref.read(readerProvider.notifier);
+
+    _pdfId = widget.params.pdfId;
 
     _readerSub =
         ref.listenManual<ReaderState>(readerProvider, (previous, next) {
@@ -48,7 +55,10 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     // Open PDF after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _readerNotifier.openPdf(pdfId: widget.pdfId);
+        _readerNotifier.openPdf(
+          pdfId: _pdfId,
+          initialReaderMode: widget.params.initialReaderMode,
+        );
       }
     });
   }
@@ -88,16 +98,19 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                   : state.error != null
                       ? AppErrorWidget(
                           message: state.error!,
-                          onRetry: () => ref
-                              .read(readerProvider.notifier)
-                              .openPdf(pdfId: widget.pdfId),
+                          onRetry: () =>
+                              ref.read(readerProvider.notifier).openPdf(
+                                    pdfId: _pdfId,
+                                    initialReaderMode:
+                                        widget.params.initialReaderMode,
+                                  ),
                         )
                       : _buildReaderContent(state, isPremium),
             ),
           ),
 
           // Top AppBar Overlay
-          if (state.document != null)
+          if (state.content != null)
             const Positioned(
               top: 0,
               left: 0,
@@ -106,7 +119,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
             ),
 
           // Bottom Controls Overlay
-          if (state.document != null)
+          if (state.content != null)
             const Positioned(
               bottom: 0,
               left: 0,
@@ -119,15 +132,15 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
   }
 
   Widget _buildReaderContent(ReaderState state, bool isPremium) {
-    final doc = state.document;
-    if (doc == null) return const SizedBox.shrink();
+    final content = state.content;
+    if (content == null) return const SizedBox.shrink();
 
     final pageIndex = state.position.pageIndex;
     final ttsConfig = ref.watch(ttsConfigProvider);
 
-    if (ttsConfig.readerMode == ReaderMode.originalPdf) {
+    if (content.isPdf && state.renderMode == ReaderMode.originalPdf) {
       final library = ref.watch(pdfLibraryProvider).valueOrNull ?? [];
-      final docInfo = library.firstWhere((d) => d.id == widget.pdfId);
+      final docInfo = library.firstWhere((d) => d.id == _pdfId);
 
       return PdfHighlightOverlay(
         filePath: docInfo.filePath,
@@ -137,8 +150,8 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     }
 
     return _buildTextReaderContent(
-      doc.pageCount,
-      doc.pages.map((p) => p.text).toList(),
+      content.pageCount,
+      content.toPageTexts(),
       ttsConfig,
       pageIndex,
     );

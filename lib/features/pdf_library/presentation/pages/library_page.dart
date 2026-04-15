@@ -11,6 +11,7 @@ import 'package:pdf_audio_reader/core/widgets/gradient_scaffold.dart';
 import 'package:pdf_audio_reader/features/auth/presentation/providers/auth_provider.dart';
 import 'package:pdf_audio_reader/features/pdf_library/domain/entities/pdf_document_info.dart';
 import 'package:pdf_audio_reader/features/pdf_library/presentation/providers/pdf_library_provider.dart';
+import 'package:pdf_audio_reader/features/reader/domain/entities/tts_config.dart';
 
 class LibraryPage extends ConsumerWidget {
   const LibraryPage({super.key});
@@ -91,8 +92,7 @@ class LibraryPage extends ConsumerWidget {
               height: 100,
               decoration: BoxDecoration(
                 color: AppColors.bgCard,
-                borderRadius:
-                    BorderRadius.circular(AppDimensions.radiusXl),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusXl),
               ),
               child: const Icon(Icons.picture_as_pdf_outlined,
                   size: 48, color: AppColors.textDisabled),
@@ -129,12 +129,150 @@ class LibraryPage extends ConsumerWidget {
         itemCount: pdfs.length,
         itemBuilder: (context, i) => _PdfCard(
           doc: pdfs[i],
-          onTap: () => context.push(RouteNames.reader, extra: pdfs[i].id),
-          onDelete: () =>
-              ref.read(pdfLibraryProvider.notifier).deletePdf(pdfs[i].id),
+          onTap: () => context.push(RouteNames.reader,
+              extra: ReaderPageParams(pdfId: pdfs[i].id)),
+          onLongPress: () => _showOpenOptions(context, pdfs[i].id),
+          onOpenOriginal: () => context.push(
+            RouteNames.reader,
+            extra: ReaderPageParams(
+              pdfId: pdfs[i].id,
+              initialReaderMode: ReaderMode.originalPdf,
+            ),
+          ),
+          onOpenPlainText: () => context.push(
+            RouteNames.reader,
+            extra: ReaderPageParams(
+              pdfId: pdfs[i].id,
+              initialReaderMode: ReaderMode.textOnly,
+            ),
+          ),
+          onDelete: () => _confirmDelete(context, ref, pdfs[i]),
         ),
       ),
     );
+  }
+
+  Future<void> _showOpenOptions(BuildContext context, String pdfId) {
+    final openOriginalPdf = ReaderPageParams(
+        pdfId: pdfId, initialReaderMode: ReaderMode.originalPdf);
+    final openTextOnly =
+        ReaderPageParams(pdfId: pdfId, initialReaderMode: ReaderMode.textOnly);
+    return showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.bgCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppDimensions.radiusLg),
+        ),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(
+              top: AppDimensions.sm,
+              bottom: AppDimensions.md,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.bgCardHover,
+                    borderRadius:
+                        BorderRadius.circular(AppDimensions.radiusFull),
+                  ),
+                ),
+                const SizedBox(height: AppDimensions.md),
+                ListTile(
+                  leading: const Icon(
+                    Icons.picture_as_pdf_rounded,
+                    color: AppColors.primary,
+                  ),
+                  title: const Text(
+                    'Open original PDF',
+                    style: AppTextStyles.labelLarge,
+                  ),
+                  subtitle: Text(
+                    'Viewer with original layout',
+                    style: AppTextStyles.bodySmall
+                        .copyWith(color: AppColors.textSecondary),
+                  ),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    context.push(
+                      RouteNames.reader,
+                      extra: openOriginalPdf,
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(
+                    Icons.text_snippet_outlined,
+                    color: AppColors.primary,
+                  ),
+                  title: const Text(
+                    'Open plain text',
+                    style: AppTextStyles.labelLarge,
+                  ),
+                  subtitle: Text(
+                    'Text-only reader',
+                    style: AppTextStyles.bodySmall
+                        .copyWith(color: AppColors.textSecondary),
+                  ),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    context.push(
+                      RouteNames.reader,
+                      extra: openTextOnly,
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+Future<void> _confirmDelete(
+  BuildContext context,
+  WidgetRef ref,
+  PdfDocumentInfo doc,
+) async {
+  final shouldDelete = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) {
+      return AlertDialog(
+        backgroundColor: AppColors.bgCard,
+        title: const Text('Remove PDF?'),
+        content: Text(
+          'This will delete "${doc.title}" from your library. This action cannot be undone.',
+          style:
+              AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text(
+              'Remove',
+              style: TextStyle(color: AppColors.error),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (shouldDelete == true && context.mounted) {
+    await ref.read(pdfLibraryProvider.notifier).deletePdf(doc.id);
   }
 }
 
@@ -143,23 +281,29 @@ class LibraryPage extends ConsumerWidget {
 class _PdfCard extends StatelessWidget {
   final PdfDocumentInfo doc;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
+  final VoidCallback onOpenOriginal;
+  final VoidCallback onOpenPlainText;
   final VoidCallback onDelete;
 
   const _PdfCard({
     required this.doc,
     required this.onTap,
+    required this.onLongPress,
+    required this.onOpenOriginal,
+    required this.onOpenPlainText,
     required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
     final hasProgress = doc.lastPageIndex != null && doc.pageCount > 0;
-    final progress = hasProgress
-        ? (doc.lastPageIndex! + 1) / doc.pageCount
-        : 0.0;
+    final progress =
+        hasProgress ? (doc.lastPageIndex! + 1) / doc.pageCount : 0.0;
 
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Container(
         decoration: BoxDecoration(
           gradient: AppColors.cardGradient,
@@ -197,9 +341,42 @@ class _PdfCard extends StatelessWidget {
                       icon: const Icon(Icons.more_vert,
                           size: 18, color: AppColors.textSecondary),
                       onSelected: (v) {
-                        if (v == 'delete') onDelete();
+                        switch (v) {
+                          case 'open_original':
+                            onOpenOriginal();
+                            break;
+                          case 'open_plain_text':
+                            onOpenPlainText();
+                            break;
+                          case 'delete':
+                            onDelete();
+                            break;
+                        }
                       },
                       itemBuilder: (_) => [
+                        const PopupMenuItem(
+                          value: 'open_original',
+                          child: Row(
+                            children: [
+                              Icon(Icons.picture_as_pdf_rounded,
+                                  color: AppColors.primary, size: 18),
+                              SizedBox(width: 8),
+                              Text('Open original PDF'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'open_plain_text',
+                          child: Row(
+                            children: [
+                              Icon(Icons.text_snippet_outlined,
+                                  color: AppColors.primary, size: 18),
+                              SizedBox(width: 8),
+                              Text('Open plain text'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuDivider(),
                         const PopupMenuItem(
                           value: 'delete',
                           child: Row(
@@ -254,4 +431,14 @@ class _PdfCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class ReaderPageParams {
+  final String pdfId;
+  final ReaderMode? initialReaderMode;
+
+  ReaderPageParams({
+    required this.pdfId,
+    this.initialReaderMode,
+  });
 }
