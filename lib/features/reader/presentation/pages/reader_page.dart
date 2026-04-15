@@ -159,10 +159,9 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
         currentPageIndex: pageIndex,
         scrollDirection: ttsConfig.scrollDirection,
         pageElements: content.pageElements(pageIndex),
-        activeSearchMatch:
-            searchState.currentMatch?.pageIndex == pageIndex
-                ? searchState.currentMatch
-                : null,
+        activeSearchMatch: searchState.currentMatch?.pageIndex == pageIndex
+            ? searchState.currentMatch
+            : null,
       );
     }
 
