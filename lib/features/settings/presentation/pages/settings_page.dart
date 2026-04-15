@@ -135,9 +135,33 @@ class SettingsPage extends ConsumerWidget {
           _SettingsTile(
             icon: Icons.speed_outlined,
             title: l10n.playbackSpeed,
-            subtitle: '${config.speed}x',
-            trailing:
-                const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+            subtitle: '${config.speed.toStringAsFixed(1)}x',
+            child: Row(
+              children: [
+                Expanded(
+                  child: Slider(
+                    value: config.speed,
+                    min: 0.5,
+                    max: 3.0,
+                    divisions: 25,
+                    label: '${config.speed.toStringAsFixed(1)}x',
+                    activeColor: AppColors.primary,
+                    inactiveColor: AppColors.bgSurface,
+                    onChanged: (val) {
+                      ref.read(globalTtsConfigProvider.notifier).setSpeed(val);
+                    },
+                  ),
+                ),
+                SizedBox(
+                  width: 44,
+                  child: Text(
+                    '${config.speed.toStringAsFixed(1)}x',
+                    textAlign: TextAlign.end,
+                    style: AppTextStyles.bodySmall,
+                  ),
+                ),
+              ],
+            ),
           ),
 
           const SizedBox(height: AppDimensions.lg),
@@ -202,6 +226,7 @@ class _SettingsTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? subtitle;
+  final Widget? child;
   final Widget? trailing;
   final VoidCallback? onTap;
   final Color? tileColor;
@@ -210,6 +235,7 @@ class _SettingsTile extends StatelessWidget {
     required this.icon,
     required this.title,
     this.subtitle,
+    this.child,
     this.trailing,
     this.onTap,
     this.tileColor,
@@ -224,19 +250,51 @@ class _SettingsTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
         border: Border.all(color: const Color(0xFF3A3A5C)),
       ),
-      child: ListTile(
-        onTap: onTap,
-        leading: Icon(icon, color: AppColors.primary),
-        title: Text(title, style: AppTextStyles.bodyMedium),
-        subtitle: subtitle != null
-            ? Text(subtitle!,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                ))
-            : null,
-        trailing: trailing,
-        shape: RoundedRectangleBorder(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Icon(icon, color: AppColors.primary),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: AppTextStyles.bodyMedium),
+                      if (subtitle != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            subtitle!,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      if (child != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: child!,
+                        ),
+                    ],
+                  ),
+                ),
+                if (trailing != null) ...[
+                  const SizedBox(width: 8),
+                  trailing!,
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );
