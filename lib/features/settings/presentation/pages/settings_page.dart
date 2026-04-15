@@ -51,7 +51,16 @@ class SettingsPage extends ConsumerWidget {
                         style: const TextStyle(color: AppColors.error)),
                   )
                 : TextButton(
-                    onPressed: () => context.go(RouteNames.login),
+                    onPressed: () async {
+                      final error = await ref
+                          .read(authNotifierProvider.notifier)
+                          .signInWithGoogle();
+                      if (error != null && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(error)),
+                        );
+                      }
+                    },
                     child: Text(l10n.signIn),
                   ),
           ),

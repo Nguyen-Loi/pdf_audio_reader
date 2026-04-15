@@ -5,30 +5,14 @@ import 'package:pdf_audio_reader/core/localization/app_localizations.dart';
 import 'package:pdf_audio_reader/core/router/route_names.dart';
 import 'package:pdf_audio_reader/features/auth/presentation/pages/login_page.dart';
 import 'package:pdf_audio_reader/features/auth/presentation/pages/splash_page.dart';
-import 'package:pdf_audio_reader/features/auth/presentation/providers/auth_provider.dart';
 import 'package:pdf_audio_reader/features/pdf_library/presentation/pages/library_page.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/pages/reader_page.dart';
 import 'package:pdf_audio_reader/features/settings/presentation/pages/settings_page.dart';
 import 'package:pdf_audio_reader/features/subscription/presentation/pages/paywall_page.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authNotifier = _AuthListenable(ref);
-
   return GoRouter(
     initialLocation: RouteNames.splash,
-    refreshListenable: authNotifier,
-    redirect: (context, state) {
-      final authState = ref.read(authStateProvider);
-      final isLoggedIn = authState.valueOrNull != null;
-      final isSplash = state.matchedLocation == RouteNames.splash;
-      final isLogin = state.matchedLocation == RouteNames.login;
-
-      if (isSplash) return null; // Splash handles its own redirect
-
-      if (!isLoggedIn && !isLogin) return RouteNames.login;
-      if (isLoggedIn && isLogin) return RouteNames.library;
-      return null;
-    },
     routes: [
       GoRoute(
         path: RouteNames.splash,
@@ -66,10 +50,3 @@ final routerProvider = Provider<GoRouter>((ref) {
     ),
   );
 });
-
-/// Bridges Riverpod auth state to GoRouter's [Listenable] refresh.
-class _AuthListenable extends ChangeNotifier {
-  _AuthListenable(Ref ref) {
-    ref.listen(authStateProvider, (_, __) => notifyListeners());
-  }
-}

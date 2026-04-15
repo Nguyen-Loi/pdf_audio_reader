@@ -47,7 +47,7 @@ class SubscriptionNotifier extends StateNotifier<SubscriptionState> {
     }
   }
 
-  Future<void> purchase() async {
+  Future<void> purchasePremium() async {
     final products = state.availableProducts.cast<ProductDetails>();
     if (products.isEmpty) {
       state = state.copyWith(error: 'No products available');
@@ -56,6 +56,8 @@ class SubscriptionNotifier extends StateNotifier<SubscriptionState> {
     final param = PurchaseParam(productDetails: products.first);
     await InAppPurchase.instance.buyNonConsumable(purchaseParam: param);
   }
+
+  Future<void> purchase() => purchasePremium();
 
   Future<void> restore() async {
     await InAppPurchase.instance.restorePurchases();
@@ -87,4 +89,24 @@ class SubscriptionNotifier extends StateNotifier<SubscriptionState> {
 final subscriptionProvider =
     StateNotifierProvider<SubscriptionNotifier, SubscriptionState>(
   (_) => SubscriptionNotifier(),
+);
+
+class PremiumService {
+  const PremiumService(this.ref);
+
+  final Ref ref;
+
+  bool get isPremium => ref.read(subscriptionProvider).isPremium;
+
+  Future<void> purchasePremium() {
+    return ref.read(subscriptionProvider.notifier).purchasePremium();
+  }
+
+  Future<void> restorePurchase() {
+    return ref.read(subscriptionProvider.notifier).restore();
+  }
+}
+
+final premiumServiceProvider = Provider<PremiumService>(
+  (ref) => PremiumService(ref),
 );

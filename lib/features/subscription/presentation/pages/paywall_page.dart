@@ -5,14 +5,22 @@ import 'package:pdf_audio_reader/core/constants/app_colors.dart';
 import 'package:pdf_audio_reader/core/constants/app_dimensions.dart';
 import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
 import 'package:pdf_audio_reader/core/localization/app_localizations.dart';
+import 'package:pdf_audio_reader/features/auth/presentation/providers/auth_provider.dart';
 import 'package:pdf_audio_reader/core/widgets/gradient_scaffold.dart';
 import 'package:pdf_audio_reader/features/subscription/presentation/providers/subscription_provider.dart';
 
-class PaywallPage extends ConsumerWidget {
+class PaywallPage extends ConsumerStatefulWidget {
   const PaywallPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PaywallPage> createState() => _PaywallPageState();
+}
+
+class _PaywallPageState extends ConsumerState<PaywallPage> {
+  bool _purchaseInProgress = false;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
     final sub = ref.watch(subscriptionProvider);
 
@@ -82,8 +90,9 @@ class PaywallPage extends ConsumerWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () =>
-                        ref.read(subscriptionProvider.notifier).purchase(),
+                    onPressed: _purchaseInProgress
+                        ? null
+                        : () => _handleUnlockPremium(context),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.all(18),
                       backgroundColor: AppColors.primary,
@@ -130,6 +139,60 @@ class PaywallPage extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _handleUnlockPremium(BuildContext context) async {
+    final user = ref.read(currentUserProvider);
+
+    if (user == null) {
+      final shouldSignIn = await _showLoginRequiredDialog(context);
+      if (!shouldSignIn || !mounted) return;
+
+      final error =
+          await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+      if (error != null) {
+        final isCancelled = error.toLowerCase().contains('cancel');
+        if (!isCancelled && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(error)),
+          );
+        }
+        return;
+      }
+    }
+
+    if (!mounted) return;
+    setState(() => _purchaseInProgress = true);
+    try {
+      await ref.read(subscriptionProvider.notifier).purchasePremium();
+    } finally {
+      if (mounted) {
+        setState(() => _purchaseInProgress = false);
+      }
+    }
+  }
+
+  Future<bool> _showLoginRequiredDialog(BuildContext context) async {
+    final choice = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.bgCard,
+        title: const Text('Google Sign-In Required'),
+        content: const Text('Please sign in with Google to continue'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Sign in with Google'),
+          ),
+        ],
+      ),
+    );
+
+    return choice ?? false;
   }
 
   List<(IconData, String)> _features(AppLocalizations l10n) => [

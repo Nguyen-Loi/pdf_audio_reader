@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pdf_audio_reader/core/constants/app_colors.dart';
 import 'package:pdf_audio_reader/core/constants/app_dimensions.dart';
 import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
 import 'package:pdf_audio_reader/core/localization/app_localizations.dart';
+import 'package:pdf_audio_reader/core/router/route_names.dart';
 import 'package:pdf_audio_reader/core/widgets/gradient_scaffold.dart';
 import 'package:pdf_audio_reader/features/auth/presentation/providers/auth_provider.dart';
 import 'package:pdf_audio_reader/features/auth/presentation/widgets/google_sign_in_button.dart';
@@ -32,8 +34,7 @@ class LoginPage extends ConsumerWidget {
               const Spacer(),
               // Guest mode
               TextButton(
-                onPressed: () =>
-                    ref.read(authNotifierProvider.notifier).signInAnonymously(),
+                onPressed: () => context.go(RouteNames.library),
                 child: Text(
                   l10n.continueWithoutAccount,
                   style: AppTextStyles.bodySmall.copyWith(
