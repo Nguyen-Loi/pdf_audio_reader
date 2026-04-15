@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf_audio_reader/core/constants/app_colors.dart';
 import 'package:pdf_audio_reader/core/constants/app_dimensions.dart';
 import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
+import 'package:pdf_audio_reader/core/localization/app_localizations.dart';
 import 'package:pdf_audio_reader/core/widgets/app_error_widget.dart';
 import 'package:pdf_audio_reader/core/widgets/app_loading.dart';
 import 'package:pdf_audio_reader/core/widgets/gradient_scaffold.dart';
@@ -76,6 +77,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final state = ref.watch(readerProvider);
     final isPremium = ref.watch(subscriptionProvider).isPremium;
     final uiState = ref.watch(readerUiStateProvider);
@@ -94,7 +96,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                 }
               },
               child: state.isLoading
-                  ? const AppLoading(message: 'Opening PDF…')
+                  ? AppLoading(message: l10n.openingPdf)
                   : state.error != null
                       ? AppErrorWidget(
                           message: state.error!,
@@ -105,7 +107,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                                         widget.params.initialReaderMode,
                                   ),
                         )
-                      : _buildReaderContent(state, isPremium),
+                      : _buildReaderContent(state, isPremium, l10n),
             ),
           ),
 
@@ -131,7 +133,11 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     );
   }
 
-  Widget _buildReaderContent(ReaderState state, bool isPremium) {
+  Widget _buildReaderContent(
+    ReaderState state,
+    bool isPremium,
+    AppLocalizations l10n,
+  ) {
     final content = state.content;
     if (content == null) return const SizedBox.shrink();
 
@@ -154,6 +160,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
       content.toPageTexts(),
       ttsConfig,
       pageIndex,
+      l10n,
     );
   }
 
@@ -181,6 +188,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     List<String> pageTexts,
     TtsConfig ttsConfig,
     int currentPageIndex,
+    AppLocalizations l10n,
   ) {
     final mediaPadding = MediaQuery.of(context).padding;
     final topPadding = mediaPadding.top + AppDimensions.md;
@@ -215,6 +223,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
               pageCount: pageCount,
               pageText: pageTexts[index],
               isActive: index == currentPageIndex,
+              l10n: l10n,
             ),
           );
         },
@@ -231,6 +240,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
           pageCount: pageCount,
           pageText: pageTexts[index],
           isActive: index == currentPageIndex,
+          l10n: l10n,
         );
       },
     );
@@ -241,6 +251,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     required int pageCount,
     required String pageText,
     required bool isActive,
+    required AppLocalizations l10n,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,7 +268,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                 borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
               ),
               child: Text(
-                'Page ${pageIndex + 1} / $pageCount',
+                l10n.pageOf(pageIndex + 1, pageCount),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 11,
@@ -268,16 +279,15 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
           ],
         ),
         const SizedBox(height: AppDimensions.lg),
-        _buildPageText(pageText, isActive),
+        _buildPageText(pageText, isActive, l10n),
         const SizedBox(height: AppDimensions.xl),
       ],
     );
   }
 
-  Widget _buildPageText(String pageText, bool isActive) {
+  Widget _buildPageText(String pageText, bool isActive, AppLocalizations l10n) {
     if (pageText.isEmpty) {
-      return const Text('No text on this page',
-          style: AppTextStyles.bodyMedium);
+      return Text(l10n.noTextOnThisPage, style: AppTextStyles.bodyMedium);
     }
     if (isActive) {
       return HighlightedTextView(pageText: pageText);

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf_audio_reader/core/constants/app_colors.dart';
 import 'package:pdf_audio_reader/core/constants/app_dimensions.dart';
 import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
+import 'package:pdf_audio_reader/core/localization/app_localizations.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/tts_config_provider.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/reader_provider.dart';
 
@@ -36,6 +37,7 @@ class SpeedSelector extends ConsumerWidget {
   }
 
   void _showSpeedSheet(BuildContext context, WidgetRef ref, double current) {
+    final l10n = context.l10n;
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.bgSurface,
@@ -49,7 +51,7 @@ class SpeedSelector extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Playback Speed', style: AppTextStyles.h3),
+            Text(l10n.playbackSpeed, style: AppTextStyles.h3),
             const SizedBox(height: AppDimensions.lg),
             Wrap(
               alignment: WrapAlignment.center,
@@ -62,9 +64,7 @@ class SpeedSelector extends ConsumerWidget {
                     final newConfig =
                         ref.read(ttsConfigProvider).copyWith(speed: s);
                     ref.read(ttsConfigProvider.notifier).setSpeed(s);
-                    ref
-                        .read(readerProvider.notifier)
-                        .applyConfig(newConfig);
+                    ref.read(readerProvider.notifier).applyConfig(newConfig);
                     Navigator.of(context).pop();
                   },
                   child: AnimatedContainer(

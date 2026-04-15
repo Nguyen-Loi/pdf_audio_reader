@@ -11,6 +11,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   cupertino_icons: ^1.0.8
 
   # State Management
@@ -45,7 +47,7 @@ dependencies:
   uuid: ^4.5.1
   equatable: ^2.0.5
   fpdart: ^1.1.0
-  intl: ^0.19.0
+  intl: ^0.20.2
   flutter_hooks: ^0.20.5
   syncfusion_flutter_pdf: ^33.1.47
   syncfusion_flutter_pdfviewer: ^33.1.47
@@ -63,6 +65,7 @@ dev_dependencies:
   mocktail: ^1.0.4
 
 flutter:
+  generate: true
   uses-material-design: true
   fonts:
     - family: Inter

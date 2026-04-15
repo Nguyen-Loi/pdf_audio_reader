@@ -1,0 +1,122 @@
+{
+  "@@locale": "vi",
+  "appName": "PDF Readcloud",
+  "settings": "Cài đặt",
+  "account": "Tài khoản",
+  "guest": "Khách",
+  "notSignedIn": "Chưa đăng nhập",
+  "signOut": "Đăng xuất",
+  "signIn": "Đăng nhập",
+  "subscription": "Gói đăng ký",
+  "premiumActive": "Premium đang hoạt động ✓",
+  "upgradeToPremium": "Nâng cấp Premium",
+  "backgroundPlaybackEnabled": "Phát nền đã bật",
+  "unlockBackgroundAudioPlayback": "Mở khóa phát âm thanh nền",
+  "viewOptions": "Tùy chọn hiển thị",
+  "readerMode": "Chế độ đọc",
+  "plainText": "Văn bản thuần",
+  "originalPdf": "PDF gốc",
+  "scrollDirection": "Hướng cuộn",
+  "vertical": "Dọc",
+  "horizontal": "Ngang",
+  "textToSpeech": "Chuyển văn bản thành giọng nói",
+  "playbackSpeed": "Tốc độ phát",
+  "voiceLanguage": "Ngôn ngữ giọng nói",
+  "about": "Giới thiệu",
+  "appLanguage": "Ngôn ngữ ứng dụng",
+  "english": "Tiếng Anh",
+  "vietnamese": "Tiếng Việt",
+  "continueWithoutAccount": "Tiếp tục không cần tài khoản",
+  "listenToYourPdfsWithRealtimeWordHighlighting": "Nghe PDF với\\nđánh sáng từng từ theo thời gian thực",
+  "getStarted": "Bắt đầu",
+  "signInToSyncYourLibraryAcrossDevices": "Đăng nhập để đồng bộ thư viện giữa các thiết bị",
+  "myLibrary": "Thư viện của tôi",
+  "loadingLibrary": "Đang tải thư viện...",
+  "openingPdf": "Đang mở PDF...",
+  "importPdf": "Nhập PDF",
+  "noPdfsYet": "Chưa có PDF nào",
+  "tapToImportFirstPdf": "Nhấn nút bên dưới để nhập\\nPDF đầu tiên của bạn",
+  "hello": "Xin chào, {name} 👋",
+  "@hello": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "pages": "{count} trang",
+  "@pages": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pageNotFound": "Không tìm thấy trang",
+  "pageNotFoundMessage": "Không tìm thấy trang: {error}",
+  "@pageNotFoundMessage": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "pageOf": "Trang {pageNumber} / {pageCount}",
+  "@pageOf": {
+    "placeholders": {
+      "pageNumber": {
+        "type": "int"
+      },
+      "pageCount": {
+        "type": "int"
+      }
+    }
+  },
+  "noTextOnThisPage": "Trang này không có văn bản",
+  "sessionSettings": "Cài đặt phiên",
+  "reset": "Đặt lại",
+  "speechSpeed": "Tốc độ giọng nói",
+  "voice": "Giọng đọc",
+  "systemDefault": "Mặc định hệ thống",
+  "autoDetectedByContent": "Tự động (phát hiện từ nội dung)",
+  "showAllLanguages": "Hiển thị tất cả ngôn ngữ",
+  "detected": "Đã phát hiện: {locale}",
+  "@detected": {
+    "placeholders": {
+      "locale": {}
+    }
+  },
+  "unableToLoadVoices": "Không thể tải giọng đọc: {error}",
+  "@unableToLoadVoices": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "noVoicesAvailableForThisLanguage": "Không có giọng đọc nào cho ngôn ngữ này.",
+  "systemVoice": "Giọng hệ thống",
+  "searchNotImplementedYet": "Tìm kiếm chưa được hỗ trợ.",
+  "cancel": "Hủy",
+  "goPremium": "Nâng cấp Premium",
+  "unlockPremium": "Mở khóa Premium",
+  "restorePurchase": "Khôi phục mua hàng",
+  "keepReadingWhileScreenIsOff": "Tiếp tục đọc khi tắt màn hình",
+  "backgroundAudioPlayback": "Phát âm thanh nền",
+  "lockScreenAndNotificationControls": "Điều khiển trên màn hình khóa và thông báo",
+  "allFuturePremiumFeatures": "Tất cả tính năng Premium trong tương lai",
+  "removePdfMessage": "Thao tác này sẽ xóa \"{title}\" khỏi thư viện của bạn. Không thể hoàn tác.",
+  "@removePdfMessage": {
+    "placeholders": {
+      "title": {}
+    }
+  },
+  "removePdf": "Xóa PDF?",
+  "openOriginalPdf": "Mở PDF gốc",
+  "viewerWithOriginalLayout": "Trình xem với bố cục gốc",
+  "openPlainText": "Mở văn bản thuần",
+  "textOnlyReader": "Trình đọc chỉ văn bản",
+  "delete": "Xóa",
+  "retry": "Thử lại",
+  "reader": "Trình đọc",
+  "versionLabel": "Phiên bản {version}",
+  "@versionLabel": {
+    "placeholders": {
+      "version": {}
+    }
+  }
+}

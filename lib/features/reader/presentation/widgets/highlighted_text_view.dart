@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf_audio_reader/core/constants/app_colors.dart';
 import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
+import 'package:pdf_audio_reader/core/localization/app_localizations.dart';
 import 'package:pdf_audio_reader/features/reader/domain/entities/highlight_state.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/highlight_provider.dart';
 
@@ -13,14 +14,15 @@ class HighlightedTextView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final highlight = ref.watch(highlightProvider);
-    return _buildRichText(pageText, highlight);
+    return _buildRichText(pageText, highlight, l10n);
   }
 
-  Widget _buildRichText(String text, HighlightState h) {
+  Widget _buildRichText(String text, HighlightState h, AppLocalizations l10n) {
     if (text.isEmpty) {
-      return const Center(
-        child: Text('No text on this page', style: AppTextStyles.bodyMedium),
+      return Center(
+        child: Text(l10n.noTextOnThisPage, style: AppTextStyles.bodyMedium),
       );
     }
 

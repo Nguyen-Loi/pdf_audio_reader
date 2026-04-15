@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pdf_audio_reader/core/constants/app_colors.dart';
 import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
+import 'package:pdf_audio_reader/core/localization/app_localizations.dart';
 import 'package:pdf_audio_reader/core/router/route_names.dart';
 import 'package:pdf_audio_reader/features/auth/presentation/providers/auth_provider.dart';
 
@@ -12,6 +13,7 @@ class SplashPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     ref.listen(authStateProvider, (_, next) {
       next.whenData((user) {
         context.go(user != null ? RouteNames.library : RouteNames.login);
@@ -45,7 +47,7 @@ class SplashPage extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 24),
-            const Text('PDF Readcloud', style: AppTextStyles.h1),
+            Text(l10n.appName, style: AppTextStyles.h1),
             const SizedBox(height: 32),
             const CircularProgressIndicator(
               color: AppColors.primary,

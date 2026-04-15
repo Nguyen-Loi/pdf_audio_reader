@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pdf_audio_reader/core/localization/app_localizations.dart';
 import 'package:pdf_audio_reader/core/router/route_names.dart';
 import 'package:pdf_audio_reader/features/auth/presentation/pages/login_page.dart';
 import 'package:pdf_audio_reader/features/auth/presentation/pages/splash_page.dart';
@@ -59,7 +60,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
     errorBuilder: (context, state) => Scaffold(
-      body: Center(child: Text('Page not found: ${state.error}')),
+      body: Center(
+        child: Text(context.l10n.pageNotFoundMessage(state.error.toString())),
+      ),
     ),
   );
 });

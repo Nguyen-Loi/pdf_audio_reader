@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pdf_audio_reader/core/constants/app_colors.dart';
 import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
+import 'package:pdf_audio_reader/core/localization/app_localizations.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/reader_provider.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/ui_state_provider.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/widgets/session_settings_modal.dart';
-
 
 class ReaderAppBar extends ConsumerWidget implements PreferredSizeWidget {
   const ReaderAppBar({super.key});
@@ -16,10 +16,13 @@ class ReaderAppBar extends ConsumerWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final uiState = ref.watch(readerUiStateProvider);
-    
+
     return AnimatedSlide(
-      offset: uiState == ReaderUiState.overlayHud ? Offset.zero : const Offset(0, -1),
+      offset: uiState == ReaderUiState.overlayHud
+          ? Offset.zero
+          : const Offset(0, -1),
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       child: AnimatedOpacity(
@@ -40,10 +43,10 @@ class ReaderAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 Expanded(
                   child: Consumer(
                     builder: (context, ref, child) {
-                        final title =
+                      final title =
                           ref.watch(readerProvider.select((s) => s.title));
                       return Text(
-                        title ?? 'Reader',
+                        title ?? l10n.reader,
                         style: AppTextStyles.h3,
                         overflow: TextOverflow.ellipsis,
                       );
@@ -55,7 +58,7 @@ class ReaderAppBar extends ConsumerWidget implements PreferredSizeWidget {
                   color: AppColors.textSecondary,
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Search not implemented yet.')),
+                      SnackBar(content: Text(l10n.searchNotImplementedYet)),
                     );
                   },
                 ),
