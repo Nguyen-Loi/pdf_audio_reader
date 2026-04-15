@@ -416,12 +416,6 @@ abstract class AppLocalizations {
   /// **'System Voice'**
   String get systemVoice;
 
-  /// No description provided for @searchNotImplementedYet.
-  ///
-  /// In en, this message translates to:
-  /// **'Search not implemented yet.'**
-  String get searchNotImplementedYet;
-
   /// No description provided for @cancel.
   ///
   /// In en, this message translates to:

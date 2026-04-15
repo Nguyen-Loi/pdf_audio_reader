@@ -6,6 +6,7 @@ import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
 import 'package:pdf_audio_reader/core/localization/app_localizations.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/reader_provider.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/ui_state_provider.dart';
+import 'package:pdf_audio_reader/features/reader/presentation/widgets/reader_search_sheet.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/widgets/session_settings_modal.dart';
 
 class ReaderAppBar extends ConsumerWidget implements PreferredSizeWidget {
@@ -57,8 +58,11 @@ class ReaderAppBar extends ConsumerWidget implements PreferredSizeWidget {
                   icon: const Icon(Icons.search),
                   color: AppColors.textSecondary,
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(l10n.searchNotImplementedYet)),
+                    showModalBottomSheet<void>(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      isScrollControlled: true,
+                      builder: (context) => const ReaderSearchSheet(),
                     );
                   },
                 ),

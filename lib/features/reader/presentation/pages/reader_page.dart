@@ -11,13 +11,16 @@ import 'package:pdf_audio_reader/core/widgets/gradient_scaffold.dart';
 import 'package:pdf_audio_reader/features/pdf_library/presentation/pages/library_page.dart';
 import 'package:pdf_audio_reader/features/pdf_library/presentation/providers/pdf_library_provider.dart';
 import 'package:pdf_audio_reader/features/reader/domain/entities/tts_config.dart';
+import 'package:pdf_audio_reader/features/reader/domain/entities/text_search_models.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/reader_provider.dart';
+import 'package:pdf_audio_reader/features/reader/presentation/providers/search_provider.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/tts_config_provider.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/ui_state_provider.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/widgets/highlighted_text_view.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/widgets/pdf_highlight_overlay.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/widgets/player_controls_bar.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/widgets/reader_app_bar.dart';
+import 'package:pdf_audio_reader/features/reader/presentation/widgets/search_highlighted_text_view.dart';
 import 'package:pdf_audio_reader/features/subscription/presentation/providers/subscription_provider.dart';
 
 class ReaderPage extends ConsumerStatefulWidget {
@@ -81,6 +84,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     final state = ref.watch(readerProvider);
     final isPremium = ref.watch(subscriptionProvider).isPremium;
     final uiState = ref.watch(readerUiStateProvider);
+    final searchState = ref.watch(readerSearchProvider);
 
     return GradientScaffold(
       body: Stack(
@@ -107,7 +111,8 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                                         widget.params.initialReaderMode,
                                   ),
                         )
-                      : _buildReaderContent(state, isPremium, l10n),
+                      : _buildReaderContent(
+                          state, isPremium, l10n, searchState),
             ),
           ),
 
@@ -137,6 +142,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     ReaderState state,
     bool isPremium,
     AppLocalizations l10n,
+    ReaderSearchState searchState,
   ) {
     final content = state.content;
     if (content == null) return const SizedBox.shrink();
@@ -152,6 +158,10 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
         filePath: docInfo.filePath,
         currentPageIndex: pageIndex,
         scrollDirection: ttsConfig.scrollDirection,
+        pageElements: content.pageElements(pageIndex),
+        activeSearchMatch: searchState.currentMatch?.pageIndex == pageIndex
+            ? searchState.currentMatch
+            : null,
       );
     }
 
@@ -161,6 +171,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
       ttsConfig,
       pageIndex,
       l10n,
+      searchState,
     );
   }
 
@@ -189,6 +200,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     TtsConfig ttsConfig,
     int currentPageIndex,
     AppLocalizations l10n,
+    ReaderSearchState searchState,
   ) {
     final mediaPadding = MediaQuery.of(context).padding;
     final topPadding = mediaPadding.top + AppDimensions.md;
@@ -224,6 +236,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
               pageText: pageTexts[index],
               isActive: index == currentPageIndex,
               l10n: l10n,
+              searchState: searchState,
             ),
           );
         },
@@ -241,6 +254,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
           pageText: pageTexts[index],
           isActive: index == currentPageIndex,
           l10n: l10n,
+          searchState: searchState,
         );
       },
     );
@@ -252,6 +266,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     required String pageText,
     required bool isActive,
     required AppLocalizations l10n,
+    required ReaderSearchState searchState,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,16 +294,45 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
           ],
         ),
         const SizedBox(height: AppDimensions.lg),
-        _buildPageText(pageText, isActive, l10n),
+        _buildPageText(
+          pageText: pageText,
+          pageIndex: pageIndex,
+          isActive: isActive,
+          l10n: l10n,
+          searchState: searchState,
+        ),
         const SizedBox(height: AppDimensions.xl),
       ],
     );
   }
 
-  Widget _buildPageText(String pageText, bool isActive, AppLocalizations l10n) {
+  Widget _buildPageText({
+    required String pageText,
+    required int pageIndex,
+    required bool isActive,
+    required AppLocalizations l10n,
+    required ReaderSearchState searchState,
+  }) {
     if (pageText.isEmpty) {
       return Text(l10n.noTextOnThisPage, style: AppTextStyles.bodyMedium);
     }
+
+    final pageMatches = searchState.matches
+        .where((match) => match.pageIndex == pageIndex)
+        .toList(growable: false);
+    final TextMatch? activePageMatch =
+        searchState.currentMatch?.pageIndex == pageIndex
+            ? searchState.currentMatch
+            : null;
+
+    if (pageMatches.isNotEmpty) {
+      return SearchHighlightedTextView(
+        pageText: pageText,
+        matches: pageMatches,
+        activeMatch: activePageMatch,
+      );
+    }
+
     if (isActive) {
       return HighlightedTextView(pageText: pageText);
     }
