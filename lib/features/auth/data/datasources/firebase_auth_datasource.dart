@@ -42,15 +42,6 @@ class FirebaseAuthDatasource {
     }
   }
 
-  Future<AppUser> signInAnonymously() async {
-    try {
-      final result = await _auth.signInAnonymously();
-      return _mapUser(result.user!);
-    } catch (e) {
-      throw AuthException(e.toString());
-    }
-  }
-
   Future<void> signOut() async {
     await Future.wait([
       _auth.signOut(),

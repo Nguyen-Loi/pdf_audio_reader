@@ -6,6 +6,5 @@ abstract interface class AuthRepository {
   Stream<AppUser?> get authStateChanges;
   AppUser? get currentUser;
   Future<Either<Failure, AppUser>> signInWithGoogle();
-  Future<Either<Failure, AppUser>> signInAnonymously();
   Future<Either<Failure, void>> signOut();
 }

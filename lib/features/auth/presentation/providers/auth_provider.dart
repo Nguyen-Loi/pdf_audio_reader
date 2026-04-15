@@ -26,6 +26,10 @@ final currentUserProvider = Provider<AppUser?>(
   (ref) => ref.watch(authStateProvider).valueOrNull,
 );
 
+final isLoggedInProvider = Provider<bool>(
+  (ref) => ref.watch(currentUserProvider) != null,
+);
+
 // ── Auth actions notifier ──────────────────────────────────────────────────
 
 class AuthNotifier extends AsyncNotifier<void> {
@@ -47,21 +51,6 @@ class AuthNotifier extends AsyncNotifier<void> {
     );
   }
 
-  Future<String?> signInAnonymously() async {
-    state = const AsyncLoading();
-    final result = await ref.read(authRepositoryProvider).signInAnonymously();
-    return result.fold(
-      (failure) {
-        state = AsyncError(failure, StackTrace.current);
-        return failure.message;
-      },
-      (_) {
-        state = const AsyncData(null);
-        return null;
-      },
-    );
-  }
-
   Future<void> signOut() async {
     state = const AsyncLoading();
     await ref.read(authRepositoryProvider).signOut();
@@ -71,3 +60,23 @@ class AuthNotifier extends AsyncNotifier<void> {
 
 final authNotifierProvider =
     AsyncNotifierProvider<AuthNotifier, void>(AuthNotifier.new);
+
+class AuthService {
+  const AuthService(this.ref);
+
+  final Ref ref;
+
+  bool get isLoggedIn => ref.read(isLoggedInProvider);
+
+  Future<String?> signInWithGoogle() {
+    return ref.read(authNotifierProvider.notifier).signInWithGoogle();
+  }
+
+  Future<void> signOut() {
+    return ref.read(authNotifierProvider.notifier).signOut();
+  }
+}
+
+final authServiceProvider = Provider<AuthService>(
+  (ref) => AuthService(ref),
+);

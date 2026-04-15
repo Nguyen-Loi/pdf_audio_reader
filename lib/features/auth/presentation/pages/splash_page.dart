@@ -5,19 +5,18 @@ import 'package:pdf_audio_reader/core/constants/app_colors.dart';
 import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
 import 'package:pdf_audio_reader/core/localization/app_localizations.dart';
 import 'package:pdf_audio_reader/core/router/route_names.dart';
-import 'package:pdf_audio_reader/features/auth/presentation/providers/auth_provider.dart';
 
-/// Shown at launch. Waits for auth state then redirects.
+/// Shown at launch. Local-first flow continues to library without login.
 class SplashPage extends ConsumerWidget {
   const SplashPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    ref.listen(authStateProvider, (_, next) {
-      next.whenData((user) {
-        context.go(user != null ? RouteNames.library : RouteNames.login);
-      });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) {
+        context.go(RouteNames.library);
+      }
     });
 
     return Scaffold(
