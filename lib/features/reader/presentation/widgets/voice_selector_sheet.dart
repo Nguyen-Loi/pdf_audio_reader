@@ -70,7 +70,7 @@ class VoiceSelectorSheet extends ConsumerWidget {
                   onChanged: (value) => ref
                       .read(voiceSelectorAdvancedProvider.notifier)
                       .state = value,
-                  activeColor: AppColors.primary,
+                  activeThumbColor: AppColors.primary,
                 ),
               ],
             ),

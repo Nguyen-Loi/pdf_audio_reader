@@ -260,11 +260,11 @@ class TtsAudioHandler extends BaseAudioHandler {
   }
 
   @override
-  Future<void> playMediaItem(MediaItem item) async {
-    mediaItem.add(item);
-    final extras = item.extras ?? {};
+  Future<void> playMediaItem(MediaItem mediaItem) async {
+    this.mediaItem.add(mediaItem);
+    final extras = mediaItem.extras ?? {};
 
-    _title = item.title;
+    _title = mediaItem.title;
     final contentId = extras['contentId'];
     if (contentId is String) {
       _contentId = contentId;
@@ -308,7 +308,7 @@ class TtsAudioHandler extends BaseAudioHandler {
     final pageText = _pages[_currentPageIndex];
     if (pageText.isEmpty) return;
 
-    final maxOffset = pageText.length > 0 ? pageText.length - 1 : 0;
+    final maxOffset = pageText.isNotEmpty ? pageText.length - 1 : 0;
     final safeOffset = charOffset.clamp(0, maxOffset);
 
     await _tts.speak(pageText.substring(safeOffset));

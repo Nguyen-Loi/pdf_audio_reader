@@ -231,7 +231,7 @@ class ReaderNotifier extends StateNotifier<ReaderState> {
     final pageText = content.pageText(pageIndex);
     if (pageText.trim().isEmpty) return;
 
-    final maxOffset = pageText.length > 0 ? pageText.length - 1 : 0;
+    final maxOffset = pageText.isNotEmpty ? pageText.length - 1 : 0;
     final safeOffset = charOffset.clamp(0, maxOffset);
 
     final handler = _ref.read(audioHandlerProvider);

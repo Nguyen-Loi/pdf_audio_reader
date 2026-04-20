@@ -103,7 +103,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
                     ),
                     child: Text(
                       l10n.unlockPremium,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -146,13 +146,13 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
 
     if (user == null) {
       final shouldSignIn = await _showLoginRequiredDialog(context);
-      if (!shouldSignIn || !mounted) return;
+      if (!shouldSignIn || !context.mounted) return;
 
       final error =
           await ref.read(authNotifierProvider.notifier).signInWithGoogle();
       if (error != null) {
         final isCancelled = error.toLowerCase().contains('cancel');
-        if (!isCancelled && mounted) {
+        if (!isCancelled && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(error)),
           );

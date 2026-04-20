@@ -80,7 +80,8 @@ class LibraryPage extends ConsumerWidget {
       backgroundColor: AppColors.primary,
       icon: const Icon(Icons.add, color: Colors.white),
       label: Text(l10n.importPdf,
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+          style: const TextStyle(
+              color: Colors.white, fontWeight: FontWeight.w600)),
     );
   }
 
@@ -276,9 +277,9 @@ class _PdfCard extends StatelessWidget {
                           value: 'open_original',
                           child: Row(
                             children: [
-                              Icon(Icons.picture_as_pdf_rounded,
+                              const Icon(Icons.picture_as_pdf_rounded,
                                   color: AppColors.primary, size: 18),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Text(l10n.openOriginalPdf),
                             ],
                           ),
@@ -287,9 +288,9 @@ class _PdfCard extends StatelessWidget {
                           value: 'open_plain_text',
                           child: Row(
                             children: [
-                              Icon(Icons.text_snippet_outlined,
+                              const Icon(Icons.text_snippet_outlined,
                                   color: AppColors.primary, size: 18),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Text(l10n.openPlainText),
                             ],
                           ),
@@ -299,9 +300,9 @@ class _PdfCard extends StatelessWidget {
                           value: 'delete',
                           child: Row(
                             children: [
-                              Icon(Icons.delete_outline,
+                              const Icon(Icons.delete_outline,
                                   color: AppColors.error, size: 18),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Text(
                                 l10n.delete,
                                 style: const TextStyle(color: AppColors.error),

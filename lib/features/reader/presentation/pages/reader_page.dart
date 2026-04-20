@@ -124,13 +124,13 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
             ),
 
           // Bottom Controls Overlay
-          // if (state.content != null)
-          //   const Positioned(
-          //     bottom: 0,
-          //     left: 0,
-          //     right: 0,
-          //     child: PlayerControlsBar(),
-          //   ),
+          if (state.content != null)
+            const Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: PlayerControlsBar(),
+            ),
         ],
       ),
     );

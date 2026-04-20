@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf_audio_reader/core/constants/app_colors.dart';
 import 'package:pdf_audio_reader/core/constants/app_dimensions.dart';
-import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
 import 'package:pdf_audio_reader/core/localization/app_localizations.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/reader_provider.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/ui_state_provider.dart';
@@ -44,68 +43,11 @@ class PlayerControlsBar extends ConsumerWidget {
                 duration: const Duration(milliseconds: 300),
                 child: uiState == ReaderUiState.audioMode
                     ? const _AudioHub(key: ValueKey('audioHub'))
-                    : const _StandardBottomBar(key: ValueKey('standardBar')),
+                    : const SizedBox.shrink(),
               ),
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _StandardBottomBar extends ConsumerWidget {
-  const _StandardBottomBar({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(readerProvider);
-    final title = state.title ?? context.l10n.reader;
-    final pageIndex = state.position.pageIndex;
-    final pageCount = state.pageCount;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppDimensions.md, vertical: 12),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            title,
-            style: AppTextStyles.labelLarge,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          if (pageCount > 1)
-            Row(
-              children: [
-                Text(
-                  '${pageIndex + 1}',
-                  style: const TextStyle(
-                      color: AppColors.textSecondary, fontSize: 12),
-                ),
-                Expanded(
-                  child: Slider(
-                    value: pageIndex.toDouble(),
-                    min: 0,
-                    max: (pageCount - 1 > 0 ? pageCount - 1 : 1).toDouble(),
-                    divisions: pageCount - 1 > 0 ? pageCount - 1 : 1,
-                    onChanged: (v) =>
-                        ref.read(readerProvider.notifier).skipToPage(v.round()),
-                    activeColor: AppColors.primary,
-                    inactiveColor: AppColors.bgSurface,
-                  ),
-                ),
-                Text(
-                  '$pageCount',
-                  style: const TextStyle(
-                      color: AppColors.textSecondary, fontSize: 12),
-                ),
-              ],
-            ),
-        ],
       ),
     );
   }
