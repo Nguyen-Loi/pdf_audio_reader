@@ -22,6 +22,8 @@ import 'package:pdf_audio_reader/features/reader/presentation/widgets/player_con
 import 'package:pdf_audio_reader/features/reader/presentation/widgets/reader_app_bar.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/widgets/search_highlighted_text_view.dart';
 import 'package:pdf_audio_reader/features/subscription/presentation/providers/subscription_provider.dart';
+import 'package:pdf_audio_reader/services/in_app_review_service.dart';
+
 
 class ReaderPage extends ConsumerStatefulWidget {
   final ReaderPageParams params;
@@ -37,6 +39,7 @@ class ReaderPage extends ConsumerStatefulWidget {
 class _ReaderPageState extends ConsumerState<ReaderPage> {
   final _pageController = PageController();
   late final ReaderNotifier _readerNotifier;
+  late final InAppReviewService _inAppReviewService;
   int? _pendingPageIndex;
   ProviderSubscription<ReaderState>? _readerSub;
   late String _pdfId;
@@ -45,6 +48,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
   void initState() {
     super.initState();
     _readerNotifier = ref.read(readerProvider.notifier);
+    _inAppReviewService = ref.read(inAppReviewServiceProvider);
 
     _pdfId = widget.params.pdfId;
 
@@ -73,6 +77,10 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     _readerNotifier.stop();
     _readerSub?.close();
     _pageController.dispose();
+    
+    // Check and show in-app review if eligible
+    _inAppReviewService.maybeShowReview();
+    
     super.dispose();
   }
 
