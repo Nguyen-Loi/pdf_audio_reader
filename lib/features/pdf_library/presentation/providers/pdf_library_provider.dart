@@ -4,6 +4,7 @@ import 'package:pdf_audio_reader/features/pdf_library/data/datasources/local_pdf
 import 'package:pdf_audio_reader/features/pdf_library/data/repositories/pdf_library_repository_impl.dart';
 import 'package:pdf_audio_reader/features/pdf_library/domain/entities/pdf_document_info.dart';
 import 'package:pdf_audio_reader/features/pdf_library/domain/repositories/pdf_library_repository.dart';
+import 'package:pdf_audio_reader/features/settings/data/repositories/settings_repository_impl.dart';
 import 'package:pdf_audio_reader/services/file_service.dart';
 
 final fileServiceProvider = Provider((_) => const FileService());
@@ -32,7 +33,8 @@ class PdfLibraryNotifier extends AsyncNotifier<List<PdfDocumentInfo>> {
       final path = await fileService.pickPdf();
       final result =
           await ref.read(pdfLibraryRepositoryProvider).importPdf(path);
-      return result.fold(
+
+      final errorMsg = result.fold(
         (f) => f.message,
         (doc) {
           // Optimistically add
@@ -40,6 +42,13 @@ class PdfLibraryNotifier extends AsyncNotifier<List<PdfDocumentInfo>> {
           return null;
         },
       );
+
+      if (errorMsg == null) {
+        final settings = ref.read(settingsRepositoryProvider);
+        settings.incrementImportCount();
+      }
+
+      return errorMsg;
     } catch (e) {
       return e.toString();
     }
