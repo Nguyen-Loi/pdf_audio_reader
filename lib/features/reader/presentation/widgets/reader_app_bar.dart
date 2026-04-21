@@ -20,17 +20,18 @@ class ReaderAppBar extends ConsumerWidget implements PreferredSizeWidget {
     final l10n = context.l10n;
     final uiState = ref.watch(readerUiStateProvider);
 
+    final isControlsVisible = uiState == ReaderUiState.overlayHud ||
+        uiState == ReaderUiState.audioMode;
+
     return AnimatedSlide(
-      offset: uiState == ReaderUiState.overlayHud
-          ? Offset.zero
-          : const Offset(0, -1),
+      offset: isControlsVisible ? Offset.zero : const Offset(0, -1),
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       child: AnimatedOpacity(
-        opacity: uiState == ReaderUiState.overlayHud ? 1.0 : 0.0,
+        opacity: isControlsVisible ? 1.0 : 0.0,
         duration: const Duration(milliseconds: 300),
         child: IgnorePointer(
-          ignoring: uiState != ReaderUiState.overlayHud,
+          ignoring: !isControlsVisible,
           child: Container(
             color: AppColors.bgDark.withAlpha(242), // ~0.95 opacity
             padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
@@ -68,10 +69,17 @@ class ReaderAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.record_voice_over_outlined),
-                  color: AppColors.primary,
+                  color: uiState == ReaderUiState.audioMode
+                      ? AppColors.primary
+                      : AppColors.textSecondary,
                   onPressed: () {
-                    ref.read(readerUiStateProvider.notifier).setAudioMode();
-                    ref.read(readerProvider.notifier).play();
+                    if (uiState == ReaderUiState.audioMode) {
+                      ref.read(readerUiStateProvider.notifier).setOverlayHud();
+                      ref.read(readerProvider.notifier).cancelAudio();
+                    } else {
+                      ref.read(readerUiStateProvider.notifier).setAudioMode();
+                      ref.read(readerProvider.notifier).play();
+                    }
                   },
                 ),
                 IconButton(

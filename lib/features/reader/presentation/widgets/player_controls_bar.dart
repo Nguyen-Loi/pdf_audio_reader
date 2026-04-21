@@ -128,7 +128,7 @@ class _AudioHub extends ConsumerWidget {
             children: [
               TextButton.icon(
                 onPressed: () {
-                  ref.read(readerProvider.notifier).pause();
+                  ref.read(readerProvider.notifier).cancelAudio();
                   ref.read(readerUiStateProvider.notifier).setFullPage();
                 },
                 icon: const Icon(Icons.close,

@@ -279,6 +279,26 @@ class ReaderNotifier extends StateNotifier<ReaderState> {
     state = state.copyWith(isPlaying: false);
   }
 
+  Future<void> cancelAudio() async {
+    await _ref.read(audioHandlerProvider).stop();
+    
+    final pageIndex = state.position.pageIndex;
+    state = state.copyWith(
+      isPlaying: false,
+      position: ReadingPosition(pageIndex: pageIndex, charOffset: 0),
+    );
+    
+    final content = state.content;
+    if (content != null && pageIndex >= 0 && pageIndex < content.pageCount) {
+      _ref.read(highlightProvider.notifier).setPageData(
+            pageIndex: pageIndex,
+            pageText: content.pageText(pageIndex),
+            elements: content.pageElements(pageIndex),
+            renderMode: state.renderMode,
+          );
+    }
+  }
+
   Future<void> skipToPage(int pageIndex) async {
     final content = state.content;
     if (content == null || pageIndex < 0 || pageIndex >= content.pageCount) {
