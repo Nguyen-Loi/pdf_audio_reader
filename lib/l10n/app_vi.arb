@@ -117,5 +117,6 @@
     "placeholders": {
       "version": {}
     }
-  }
+  },
+  "apply": "Áp dụng"
 }

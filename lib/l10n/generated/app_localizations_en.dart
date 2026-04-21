@@ -242,4 +242,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String versionLabel(Object version) {
     return 'Version $version';
   }
+
+  @override
+  String get apply => 'Apply';
 }

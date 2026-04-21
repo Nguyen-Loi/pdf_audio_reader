@@ -154,10 +154,7 @@ class _VoiceList extends ConsumerWidget {
                 : const Icon(Icons.circle_outlined,
                     color: AppColors.textSecondary),
             onTap: () {
-              final newConfig =
-                  ref.read(ttsConfigProvider).copyWith(voice: voice);
-              ref.read(readerProvider.notifier).applyConfig(newConfig);
-              Navigator.of(context).pop();
+              Navigator.of(context).pop(voice);
             },
           );
         },

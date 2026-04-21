@@ -161,6 +161,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
       final docInfo = library.firstWhere((d) => d.id == _pdfId);
 
       return PdfHighlightOverlay(
+        key: ValueKey(ttsConfig.scrollDirection),
         filePath: docInfo.filePath,
         currentPageIndex: pageIndex,
         onPageChanged: (index) {

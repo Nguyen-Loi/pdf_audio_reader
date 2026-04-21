@@ -242,4 +242,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String versionLabel(Object version) {
     return 'Phiên bản $version';
   }
+
+  @override
+  String get apply => 'Áp dụng';
 }

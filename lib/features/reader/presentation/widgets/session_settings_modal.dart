@@ -5,15 +5,57 @@ import 'package:pdf_audio_reader/core/constants/app_dimensions.dart';
 import 'package:pdf_audio_reader/core/constants/app_text_styles.dart';
 import 'package:pdf_audio_reader/core/localization/app_localizations.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/providers/tts_config_provider.dart';
+import 'package:pdf_audio_reader/features/reader/presentation/providers/reader_provider.dart';
 import 'package:pdf_audio_reader/features/reader/presentation/widgets/voice_selector_sheet.dart';
 
-class SessionSettingsModal extends ConsumerWidget {
+import 'package:pdf_audio_reader/features/reader/domain/entities/tts_config.dart';
+
+class SessionSettingsModal extends ConsumerStatefulWidget {
   const SessionSettingsModal({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SessionSettingsModal> createState() => _SessionSettingsModalState();
+}
+
+class _SessionSettingsModalState extends ConsumerState<SessionSettingsModal> {
+  late TtsConfig _localConfig;
+
+  @override
+  void initState() {
+    super.initState();
+    _localConfig = ref.read(ttsConfigProvider);
+  }
+
+  bool get _hasChanges {
+    final current = ref.watch(ttsConfigProvider);
+    return _localConfig.speed != current.speed ||
+           _localConfig.scrollDirection != current.scrollDirection ||
+           _localConfig.voice?['name'] != current.voice?['name'] ||
+           _localConfig.voice?['locale'] != current.voice?['locale'];
+  }
+
+  Future<void> _applyChanges() async {
+    final readerNotifier = ref.read(readerProvider.notifier);
+    final isPlaying = ref.read(readerProvider).isPlaying;
+
+    if (isPlaying) {
+      await readerNotifier.pause();
+    }
+
+    ref.read(ttsConfigProvider.notifier).setSpeed(_localConfig.speed);
+    ref.read(ttsConfigProvider.notifier).setScrollDirection(_localConfig.scrollDirection);
+    ref.read(ttsConfigProvider.notifier).setVoice(_localConfig.voice);
+
+    await readerNotifier.applyConfig(_localConfig);
+
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final sessionConfig = ref.watch(ttsConfigProvider);
 
     return Container(
       padding: const EdgeInsets.all(AppDimensions.pagePadding),
@@ -52,15 +94,13 @@ class SessionSettingsModal extends ConsumerWidget {
                 TextButton(
                   onPressed: () {
                     final globalConfig = ref.read(globalTtsConfigProvider);
-                    ref
-                        .read(ttsConfigProvider.notifier)
-                        .setSpeed(globalConfig.speed);
-                    ref
-                        .read(ttsConfigProvider.notifier)
-                        .setVoice(globalConfig.voice);
-                    ref
-                        .read(ttsConfigProvider.notifier)
-                        .setScrollDirection(globalConfig.scrollDirection);
+                    setState(() {
+                      _localConfig = _localConfig.copyWith(
+                        speed: globalConfig.speed,
+                        voice: globalConfig.voice,
+                        scrollDirection: globalConfig.scrollDirection,
+                      );
+                    });
                   },
                   child: Text(l10n.reset,
                       style: const TextStyle(color: AppColors.accent)),
@@ -75,19 +115,21 @@ class SessionSettingsModal extends ConsumerWidget {
                     color: AppColors.textSecondary, size: 20),
                 Expanded(
                   child: Slider(
-                    value: sessionConfig.speed,
+                    value: _localConfig.speed,
                     min: 0.5,
                     max: 3.0,
                     divisions: 10,
-                    label: '${sessionConfig.speed.toStringAsFixed(1)}x',
+                    label: '${_localConfig.speed.toStringAsFixed(1)}x',
                     activeColor: AppColors.primary,
                     inactiveColor: AppColors.bgSurface,
                     onChanged: (val) {
-                      ref.read(ttsConfigProvider.notifier).setSpeed(val);
+                      setState(() {
+                        _localConfig = _localConfig.copyWith(speed: val);
+                      });
                     },
                   ),
                 ),
-                Text('${sessionConfig.speed.toStringAsFixed(1)}x',
+                Text('${_localConfig.speed.toStringAsFixed(1)}x',
                     style: AppTextStyles.bodyMedium),
               ],
             ),
@@ -101,12 +143,12 @@ class SessionSettingsModal extends ConsumerWidget {
               ),
               child: ListTile(
                 title: Text(
-                  sessionConfig.voice?['name']?.toString() ??
+                  _localConfig.voice?['name']?.toString() ??
                       l10n.systemDefault,
                   style: AppTextStyles.bodyMedium,
                 ),
                 subtitle: Text(
-                  sessionConfig.voice?['locale']?.toString() ??
+                  _localConfig.voice?['locale']?.toString() ??
                       l10n.autoDetectedByContent,
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
@@ -114,13 +156,18 @@ class SessionSettingsModal extends ConsumerWidget {
                 ),
                 trailing: const Icon(Icons.chevron_right,
                     color: AppColors.textSecondary),
-                onTap: () {
-                  showModalBottomSheet(
+                onTap: () async {
+                  final voice = await showModalBottomSheet<Map<String, dynamic>>(
                     context: context,
                     backgroundColor: Colors.transparent,
                     isScrollControlled: true,
                     builder: (context) => const VoiceSelectorSheet(),
                   );
+                  if (voice != null && mounted) {
+                    setState(() {
+                      _localConfig = _localConfig.copyWith(voice: voice);
+                    });
+                  }
                 },
               ),
             ),
@@ -136,7 +183,7 @@ class SessionSettingsModal extends ConsumerWidget {
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<Axis>(
                   isExpanded: true,
-                  value: sessionConfig.scrollDirection,
+                  value: _localConfig.scrollDirection,
                   dropdownColor: AppColors.bgCard,
                   items: [
                     DropdownMenuItem(
@@ -152,15 +199,35 @@ class SessionSettingsModal extends ConsumerWidget {
                   ],
                   onChanged: (val) {
                     if (val != null) {
-                      ref
-                          .read(ttsConfigProvider.notifier)
-                          .setScrollDirection(val);
+                      setState(() {
+                        _localConfig = _localConfig.copyWith(scrollDirection: val);
+                      });
                     }
                   },
                 ),
               ),
             ),
             const SizedBox(height: AppDimensions.xl),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _hasChanges ? _applyChanges : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _hasChanges ? AppColors.primary : AppColors.bgSurface,
+                  foregroundColor: _hasChanges ? Colors.black : AppColors.textSecondary,
+                  disabledBackgroundColor: AppColors.bgSurface,
+                  disabledForegroundColor: AppColors.textSecondary.withValues(alpha: 0.5),
+                  padding: const EdgeInsets.symmetric(vertical: AppDimensions.md),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+                  ),
+                ),
+                child: Text(
+                  l10n.apply,
+                  style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
           ],
         ),
       ),

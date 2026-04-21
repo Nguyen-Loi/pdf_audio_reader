@@ -100,7 +100,9 @@ class _PdfHighlightOverlayState extends ConsumerState<PdfHighlightOverlay> {
             SfPdfViewer.memory(
               snapshot.data!,
               controller: _pdfViewerController,
-              pageLayoutMode: PdfPageLayoutMode.continuous,
+              pageLayoutMode: scrollDirection == PdfScrollDirection.horizontal
+                  ? PdfPageLayoutMode.single
+                  : PdfPageLayoutMode.continuous,
               scrollDirection: scrollDirection,
               canShowScrollHead: false,
               canShowScrollStatus: false,
